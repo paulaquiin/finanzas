@@ -14,7 +14,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="dashboard-container">
+
+    <!-- ==============================================
+         DASHBOARD VIEW
+    =============================================== -->
+    <div id="dashboardView" class="dashboard-container">
         
         <!-- HEADER -->
         <header class="dashboard-header">
@@ -23,8 +27,8 @@
                 <p>Panel interactivo de control de gastos e ingresos</p>
             </div>
             <div class="header-actions">
-                <button id="editDataBtn" class="btn btn-outline">
-                    <i class="fa-solid fa-pen-to-square"></i> Editar Datos
+                <button id="goToGastosBtn" class="btn btn-outline" title="Añadir gastos y categorizarlos">
+                    <i class="fa-solid fa-list"></i> Añadir Movimientos
                 </button>
                 <div class="date-selector">
                     <i class="fa-regular fa-calendar"></i>
@@ -37,7 +41,7 @@
 
         <!-- KPI CARDS -->
         <div class="kpi-grid">
-            <div class="kpi-card">
+            <div class="kpi-card" id="kpiCardIngresos">
                 <div class="kpi-icon blue-icon">
                     <i class="fa-solid fa-wallet"></i>
                 </div>
@@ -47,17 +51,18 @@
                 </div>
             </div>
 
-            <div class="kpi-card">
+            <!-- This KPI is clickable -->
+            <div class="kpi-card clickable-card" id="kpiCardGastos" title="Ver y editar gastos">
                 <div class="kpi-icon red-icon">
                     <i class="fa-regular fa-credit-card"></i>
                 </div>
                 <div class="kpi-info">
-                    <p class="kpi-label">Gastos Totales</p>
+                    <p class="kpi-label">Gastos Totales <i class="fa-solid fa-arrow-right kpi-arrow"></i></p>
                     <h2 class="kpi-value" id="kpiGastos">€0,00</h2>
                 </div>
             </div>
 
-            <div class="kpi-card">
+            <div class="kpi-card" id="kpiCardBeneficio">
                 <div class="kpi-icon green-icon">
                     <i class="fa-solid fa-arrow-trend-up"></i>
                 </div>
@@ -67,7 +72,7 @@
                 </div>
             </div>
 
-            <div class="kpi-card">
+            <div class="kpi-card" id="kpiCardAhorro">
                 <div class="kpi-icon purple-icon">
                     <i class="fa-solid fa-piggy-bank"></i>
                 </div>
@@ -95,15 +100,12 @@
 
             <div class="chart-card chart-donut-container">
                 <div class="chart-header">
-                    <h3 id="desgloseTitle">Desglose Mar 26</h3>
+                    <h3 id="desgloseTitle">Desglose del Mes</h3>
                 </div>
                 <div class="canvas-wrapper donut-wrapper">
                     <canvas id="donutChart"></canvas>
                 </div>
-                <!-- Custom Legend for Donut -->
-                <div id="donutLegend" class="donut-legend">
-                    <!-- Filled via JS -->
-                </div>
+                <div id="donutLegend" class="donut-legend"></div>
             </div>
         </div>
 
@@ -127,7 +129,6 @@
         <div class="chart-card table-container">
             <div class="chart-header">
                 <h3>Histórico Detallado</h3>
-                <button class="text-btn">Exportar informe</button>
             </div>
             <div class="table-wrapper">
                 <table id="historyTable">
@@ -149,65 +150,75 @@
         </div>
     </div>
 
-    <!-- MODAL FOR DYNAMIC EDITING -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">Mes: Mar 26</h2>
-                <button id="closeModalBtn" class="icon-btn close-btn"><i class="fa-solid fa-xmark"></i></button>
+
+    <!-- ==============================================
+         DETAILED EXPENSES VIEW (HIDDEN BY DEFAULT)
+    =============================================== -->
+    <div id="gastosView" class="dashboard-container" style="display: none;">
+        
+        <header class="dashboard-header">
+            <div class="header-titles">
+                <button id="backToDashBtn" class="btn btn-outline" style="margin-bottom: 12px; font-size: 0.8rem; padding: 6px 12px;">
+                    <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+                </button>
+                <h1 id="gastosViewTitle">Movimientos: Mar 26</h1>
+                <p>Añade y categoriza fácilmente tus gastos o ingresos para este mes.</p>
+            </div>
+        </header>
+
+        <div class="chart-card">
+            
+            <div class="gastos-header-actions" style="display:flex; justify-content: space-between; align-items:flex-end; margin-bottom: 24px;">
+                <h3>Registrar nuevo movimiento</h3>
+                <button id="copyFixedBtn" class="btn btn-outline" style="color: var(--brand-purple); border-color: rgba(154, 85, 255, 0.3);">
+                    <i class="fa-solid fa-clone"></i> Copiar Gastos Fijos del mes anterior
+                </button>
+            </div>
+
+            <!-- Quick Add Form -->
+            <form id="addTxnForm" class="quick-add-form">
+                <div class="txn-inputs">
+                    <input type="date" id="txnDate" title="Fecha (Opcional)">
+                    <input type="text" id="txnDesc" placeholder="Concepto (ej. Alquiler, Supermercado)" required>
+                    <select id="txnCat" required>
+                        <option value="" disabled selected>Categoría...</option>
+                        <optgroup label="Ingresos">
+                            <option value="ingresos">Ingresos (Cobro)</option>
+                        </optgroup>
+                        <optgroup label="Ahorro">
+                            <option value="ahorro">Ahorro Mínimo</option>
+                        </optgroup>
+                        <optgroup label="Gastos">
+                            <option value="fijos">Fijos (Alquiler, Luz, Internet)</option>
+                            <option value="compras">Compras</option>
+                            <option value="restaurantes">Restaurantes / Comida Fuera</option>
+                            <option value="extra">Extra / Ocio</option>
+                            <option value="trabajo">Trabajo / Transporte</option>
+                        </optgroup>
+                    </select>
+                    <input type="number" id="txnAmount" placeholder="Importe (€)" step="0.01" min="0" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="height: 100%;"><i class="fa-solid fa-plus"></i></button>
+            </form>
+
+            <!-- Transactions Table -->
+            <div class="table-wrapper" style="margin-top: 32px;">
+                <table id="categoryTable" class="txn-table">
+                    <thead>
+                        <tr>
+                            <th>FECHA</th>
+                            <th>CONCEPTO</th>
+                            <th>CATEGORÍA</th>
+                            <th style="text-align: right;">IMPORTE</th>
+                            <th style="text-align: right;">ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="txnTableBody">
+                        <!-- Filled via JS -->
+                    </tbody>
+                </table>
             </div>
             
-            <form id="dataForm">
-                <!-- Data is input by month. We edit the CURRENTLY selected month -->
-                <div class="form-grid">
-                    <div class="form-group full-row">
-                        <label>Periodo (Mes y Año)</label>
-                        <input type="month" id="formMonthDate" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Ingresos Totales (€)</label>
-                        <input type="number" id="formIngresos" step="0.01" min="0" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Ahorro del Mes (€)</label>
-                        <input type="number" id="formAhorro" step="0.01" min="0" required>
-                    </div>
-
-                    <div class="form-section-title">Detalle de Gastos</div>
-
-                    <div class="form-group">
-                        <label>Fijos (€)</label>
-                        <input type="number" id="formFijos" step="0.01" min="0" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Compras (€)</label>
-                        <input type="number" id="formCompras" step="0.01" min="0" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Restaurantes / Comida Fuera (€)</label>
-                        <input type="number" id="formRestaurantes" step="0.01" min="0" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Extra (€)</label>
-                        <input type="number" id="formExtra" step="0.01" min="0" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Trabajo (€)</label>
-                        <input type="number" id="formTrabajo" step="0.01" min="0" required>
-                    </div>
-                </div>
-
-                <div class="form-actions space-between">
-                    <button type="button" id="deleteMonthBtn" class="btn btn-danger">Eliminar Mes</button>
-                    <button type="submit" class="btn btn-primary">Guardar Datos</button>
-                </div>
-            </form>
         </div>
     </div>
 
