@@ -1,5 +1,5 @@
-const STORAGE_KEY = 'finanzas_txns_v1';
-const TEMPLATES_KEY = 'finanzas_templates_v1';
+const STORAGE_KEY = 'finanzas_txns_v2';
+const TEMPLATES_KEY = 'finanzas_templates_v2';
 
 let transactions = [];
 let fixedTemplates = [];
@@ -71,11 +71,14 @@ function init() {
 function loadData() {
     const savedTxns = localStorage.getItem(STORAGE_KEY);
     const savedTpls = localStorage.getItem(TEMPLATES_KEY);
+    
     if (savedTxns) transactions = JSON.parse(savedTxns);
+    else transactions = [];
+    
     if (savedTpls) {
         fixedTemplates = JSON.parse(savedTpls);
     } else {
-        fixedTemplates = [ { id: 'tpl1', desc: 'Alquiler', amount: 800 }, { id: 'tpl2', desc: 'Internet', amount: 35 }, { id: 'tpl3', desc: 'Agua', amount: 40 } ];
+        fixedTemplates = [];
         saveTemplates();
     }
 }
@@ -121,7 +124,9 @@ function showModal(config) {
     
     if (config.footerItems && config.footerItems.length > 0) {
         globalModalFooter.style.display = 'flex';
-        globalModalFooter.className = 'form-actions space-between';
+        globalModalFooter.className = 'form-actions';
+        globalModalFooter.style.justifyContent = 'flex-end';
+        globalModalFooter.style.gap = '12px';
         
         config.footerItems.forEach(btn => {
             const b = document.createElement('button');
@@ -317,13 +322,47 @@ function openTemplates() {
             </form>
             <div class="table-wrapper"><table style="margin-top:0;"><tbody id="tplBody"></tbody></table></div>
         `,
-        footerItems: [{ text: 'Cerrar Plantillas', class: 'btn-outline', close: true }],
+        footerItems: [{ 
+            text: 'Guardar y Finalizar', 
+            class: 'btn-primary', 
+            close: false, 
+            onClick: () => {
+                const f = document.getElementById('tplForm');
+                const desc = document.getElementById('addTplDesc').value;
+                const amt = document.getElementById('addTplAmt').value;
+                
+                // If there's input, try to save it first if valid
+                if (desc || amt) {
+                    const isDup = fixedTemplates.some(t => t.desc.toLowerCase() === desc.toLowerCase());
+                    if (isDup) {
+                        alert(`Ya existe un gasto fijo llamado "${desc}". Elige un nombre distinto.`);
+                        return;
+                    }
+                    if (f.reportValidity()) {
+                        const d = desc;
+                        const a = parseFloat(amt);
+                        fixedTemplates.push({ id: crypto.randomUUID(), desc: d, amount: a });
+                        saveTemplates();
+                    } else {
+                        return; // Keep modal open to fix validation errors
+                    }
+                }
+                closeGlobalModal();
+            } 
+        }],
         onRender: () => {
             const f = document.getElementById('tplForm');
             f.onsubmit = (e) => {
                 e.preventDefault();
                 const d = document.getElementById('addTplDesc').value;
                 const a = parseFloat(document.getElementById('addTplAmt').value);
+
+                const isDup = fixedTemplates.some(t => t.desc.toLowerCase() === d.toLowerCase());
+                if (isDup) {
+                    alert(`Ya existe un gasto fijo llamado "${d}". Elige un nombre distinto.`);
+                    return;
+                }
+
                 fixedTemplates.push({ id: crypto.randomUUID(), desc: d, amount: a });
                 saveTemplates(); f.reset(); renderTemplatesList();
             };
