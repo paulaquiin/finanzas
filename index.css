@@ -489,6 +489,32 @@ td.col-roja-val { color: var(--brand-red); }
     color: var(--brand-red);
 }
 
+/* Brand Tags Pills */
+.brand-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-right: 8px;
+}
+
+.brand-mercadona { background: #007E44; color: white; }
+.brand-lidl { background: #0050AA; color: white; }
+.brand-carrefour { background: #E61E26; color: white; }
+.brand-amazon { background: #FF9900; color: #111; }
+.brand-netflix { background: #E50914; color: white; }
+.brand-spotify { background: #1DB954; color: black; }
+.brand-zara { background: #111; color: white; }
+.brand-burgerking { background: #D62300; color: white; }
+.brand-mcdonalds { background: #FFC72C; color: #DA291C; }
+.brand-uber { background: black; color: white; }
+.brand-glovo { background: #FFC043; color: #00A082; }
+
 /* Animations */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }

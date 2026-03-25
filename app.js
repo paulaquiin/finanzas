@@ -47,6 +47,21 @@ const colors = { blue: '#4A72FF', red: '#FF4A57', green: '#10B981', purple: '#9A
 const categoryLabels = { 'ingresos': 'Ingreso', 'ahorro': 'Ahorro', 'fijos': 'Fijos', 'compras': 'Compras', 'restaurantes': 'Restaurantes', 'extra': 'Extra', 'trabajo': 'Trabajo' };
 const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
+const BRAND_MAP = {
+    'mercadona': { class: 'brand-mercadona', icon: 'fa-basket-shopping' },
+    'lidl': { class: 'brand-lidl', icon: 'fa-cart-shopping' },
+    'carrefour': { class: 'brand-carrefour', icon: 'fa-cart-flatbed' },
+    'amazon': { class: 'brand-amazon', icon: 'fa-brands fa-amazon' },
+    'netflix': { class: 'brand-netflix', icon: 'fa-tv' },
+    'spotify': { class: 'brand-spotify', icon: 'fa-brands fa-spotify' },
+    'zara': { class: 'brand-zara', icon: 'fa-bag-shopping' },
+    'burger king': { class: 'brand-burgerking', icon: 'fa-burger' },
+    'mcdonald': { class: 'brand-mcdonalds', icon: 'fa-burger' },
+    'mcdonalds': { class: 'brand-mcdonalds', icon: 'fa-burger' },
+    'uber': { class: 'brand-uber', icon: 'fa-uber' },
+    'glovo': { class: 'brand-glovo', icon: 'fa-bicycle' }
+};
+
 
 // --- INITIALIZATION ---
 function init() {
@@ -221,10 +236,28 @@ function updateGastosViewUI() {
         const sign = isIngreso ? '+' : (isAhorro ? '' : '-');
         const dStr = t.date ? t.date.split('-').reverse().slice(0,2).join('/') : '-';
 
+        // Detect Brand Tag for display
+        let brandTagHtml = '';
+        let displayDesc = t.desc;
+        const lowerDesc = t.desc.trim().toLowerCase();
+        
+        for (const [key, brand] of Object.entries(BRAND_MAP)) {
+            if (lowerDesc === key) {
+                // Exact match: Show ONLY the pill
+                brandTagHtml = `<span class="brand-pill ${brand.class}"><i class="fa-solid ${brand.icon}"></i> ${key.toUpperCase()}</span>`;
+                displayDesc = ''; // Hide text
+                break;
+            } else if (lowerDesc.includes(key)) {
+                // Partial match: Show pill + text
+                brandTagHtml = `<span class="brand-pill ${brand.class}"><i class="fa-solid ${brand.icon}"></i> ${key.toUpperCase()}</span>`;
+                break;
+            }
+        }
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td style="color: var(--text-light); font-size: 0.85rem;">${dStr}</td>
-            <td style="font-weight: 600;">${t.desc}</td>
+            <td style="font-weight: 600;">${brandTagHtml}${displayDesc}</td>
             <td><span class="cat-pill">${iconHtml} ${categoryLabels[t.category]}</span></td>
             <td style="text-align: right;" class="${isIngreso?'':'col-roja-val'}">${sign}${formatCurrency(t.amount)}</td>
             <td style="text-align: right; display: flex; justify-content: flex-end; gap: 8px;">

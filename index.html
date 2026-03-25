@@ -173,7 +173,22 @@
             <form id="addTxnForm" class="quick-add-form">
                 <div class="txn-inputs">
                     <input type="date" id="txnDate" title="Fecha (Opcional)">
-                    <input type="text" id="txnDesc" placeholder="Concepto (ej. Alquiler, Supermercado)" required>
+                    <input type="text" id="txnDesc" placeholder="Concepto (ej. Alquiler, Supermercado)" list="conceptsList" required>
+                    <datalist id="conceptsList">
+                        <option value="Mercadona">
+                        <option value="Lidl">
+                        <option value="Carrefour">
+                        <option value="Amazon">
+                        <option value="Netflix">
+                        <option value="Spotify">
+                        <option value="Burger King">
+                        <option value="McDonald's">
+                        <option value="Zara">
+                        <option value="Uber">
+                        <option value="Glovo">
+                        <option value="Alquiler">
+                        <option value="Nómina">
+                    </datalist>
                     <select id="txnCat" required>
                         <option value="" disabled selected>Categoría...</option>
                         <optgroup label="Ingresos">
