@@ -41,10 +41,10 @@
 
         <!-- KPI CARDS -->
         <div class="kpi-grid">
-            <div class="kpi-card" id="kpiCardIngresos">
+            <div class="kpi-card clickable-card" id="kpiCardIngresos" title="Ver y editar ingresos">
                 <div class="kpi-icon blue-icon"><i class="fa-solid fa-wallet"></i></div>
                 <div class="kpi-info">
-                    <p class="kpi-label">Ingresos (Cobro)</p>
+                    <p class="kpi-label">Ingresos <i class="fa-solid fa-arrow-right kpi-arrow"></i></p>
                     <h2 class="kpi-value" id="kpiIngresos">€0,00</h2>
                 </div>
             </div>
@@ -182,7 +182,7 @@
                     <select id="txnCat" required>
                         <option value="" disabled selected>Categoría...</option>
                         <optgroup label="Ingresos">
-                            <option value="ingresos">Ingresos (Cobro)</option>
+                            <option value="ingresos">Ingresos</option>
                         </optgroup>
                         <optgroup label="Ahorro">
                             <option value="ahorro">Ahorro Mínimo</option>

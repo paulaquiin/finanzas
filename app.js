@@ -56,6 +56,7 @@ function init() {
     
     monthSelector.addEventListener('change', (e) => { currentMonthId = e.target.value; updateDashboardUI(); });
     goToGastosBtn.addEventListener('click', () => toggleView(true));
+    kpiCardIngresos.addEventListener('click', () => toggleView(true));
     kpiCardGastos.addEventListener('click', () => toggleView(true));
     backToDashBtn.addEventListener('click', () => toggleView(false));
     
