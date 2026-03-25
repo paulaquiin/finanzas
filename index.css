@@ -393,8 +393,8 @@ td.col-roja-val { color: var(--brand-red); }
     background: var(--card-surface);
 }
 
-.txn-inputs input[type="date"] { flex: 0 0 160px; }
-.txn-inputs input[type="text"] { flex: 2; }
+.txn-inputs input[type="date"] { flex: 0 0 140px; }
+.txn-inputs input[type="text"] { flex: 3; }
 .txn-inputs select { flex: 1.5; color: var(--text-primary); cursor: pointer; }
 .txn-inputs input[type="number"] { flex: 0 0 120px; }
 
@@ -492,8 +492,18 @@ td.col-roja-val { color: var(--brand-red); }
 }
 
 @media (max-width: 1024px) {
+    .dashboard-container { padding: 16px; gap: 16px; }
     .charts-middle-grid { grid-template-columns: 1fr; }
-    .quick-add-form { flex-direction: column; }
-    .txn-inputs { flex-direction: column; }
-    .txn-inputs input, .txn-inputs select { flex: auto; width: 100%; }
+    .quick-add-form { flex-direction: column; padding: 12px; gap: 12px; }
+    .txn-inputs { flex-direction: column; gap: 12px; }
+    .txn-inputs input, 
+    .txn-inputs select { 
+        flex: none !important;
+        width: 100% !important;
+        height: 48px !important;
+        min-height: 48px !important;
+        padding: 0 16px !important;
+        font-size: 16px !important; /* Prevents auto-zoom on iOS */
+        box-sizing: border-box !important;
+    }
 }
