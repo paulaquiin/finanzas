@@ -16,7 +16,6 @@ const kpiCardGastos = document.getElementById('kpiCardGastos');
 const kpiIngresos = document.getElementById('kpiIngresos');
 const kpiGastos = document.getElementById('kpiGastos');
 const kpiBeneficio = document.getElementById('kpiBeneficio');
-const kpiAhorro = document.getElementById('kpiAhorro');
 const desgloseTitle = document.getElementById('desgloseTitle');
 const donutLegend = document.getElementById('donutLegend');
 const historyTableBody = document.querySelector('#historyTable tbody');
@@ -525,7 +524,7 @@ function updateDashboardUI() {
     let currentData = aggData.find(m => m.id === currentMonthId) || { id: currentMonthId, ingresos: 0, ahorro: 0, fijos: 0, compras: 0, restaurantes: 0, extra: 0, trabajo: 0 };
 
     const totalGastos = calcTotalGastos(currentData); const beneficio = currentData.ingresos - totalGastos;
-    kpiIngresos.textContent = formatCurrency(currentData.ingresos); kpiGastos.textContent = formatCurrency(totalGastos); kpiBeneficio.textContent = formatCurrency(beneficio); kpiAhorro.textContent = formatCurrency(currentData.ahorro);
+    kpiIngresos.textContent = formatCurrency(currentData.ingresos); kpiGastos.textContent = formatCurrency(totalGastos); kpiBeneficio.textContent = formatCurrency(beneficio);
     desgloseTitle.textContent = `Desglose ${formatMonth(currentMonthId)}`;
 
     updateDonutChart(currentData, totalGastos); updateHistoricalCharts(aggData); updateTable(aggData);
