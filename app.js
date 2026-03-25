@@ -13,12 +13,10 @@ const gastosView = document.getElementById('gastosView');
 const monthSelector = document.getElementById('monthSelector');
 const goToGastosBtn = document.getElementById('goToGastosBtn');
 const kpiCardGastos = document.getElementById('kpiCardGastos');
-
 const kpiIngresos = document.getElementById('kpiIngresos');
 const kpiGastos = document.getElementById('kpiGastos');
 const kpiBeneficio = document.getElementById('kpiBeneficio');
 const kpiAhorro = document.getElementById('kpiAhorro');
-
 const desgloseTitle = document.getElementById('desgloseTitle');
 const donutLegend = document.getElementById('donutLegend');
 const historyTableBody = document.querySelector('#historyTable tbody');
@@ -30,75 +28,54 @@ const txnTableBody = document.getElementById('txnTableBody');
 const addTxnForm = document.getElementById('addTxnForm');
 const configFixedBtn = document.getElementById('configFixedBtn');
 const loadFixedBtn = document.getElementById('loadFixedBtn');
+const clearMonthBtn = document.getElementById('clearMonthBtn');
 
 const txnDate = document.getElementById('txnDate');
 const txnDesc = document.getElementById('txnDesc');
 const txnCat = document.getElementById('txnCat');
 const txnAmount = document.getElementById('txnAmount');
 
-// Modals
-const fixedExpensesModal = document.getElementById('fixedExpensesModal');
-const templateForm = document.getElementById('templateForm');
-const templateListBody = document.getElementById('templateListBody');
+// Global Modal Elements
+const globalModal = document.getElementById('globalModal');
+const globalModalContent = document.getElementById('globalModalContent');
+const globalModalTitle = document.getElementById('globalModalTitle');
+const globalModalBody = document.getElementById('globalModalBody');
+const globalModalFooter = document.getElementById('globalModalFooter');
 
-const editTxnModal = document.getElementById('editTxnModal');
-const editTxnForm = document.getElementById('editTxnForm');
-const editTxnId = document.getElementById('editTxnId');
-const editTxnDesc = document.getElementById('editTxnDesc');
-const editTxnAmount = document.getElementById('editTxnAmount');
-
-
-// Charts
+// Charts & Colors
 let lineChartInst, donutChartInst, barChartInst;
-
-// Colors
 const colors = { blue: '#4A72FF', red: '#FF4A57', green: '#10B981', purple: '#9A55FF', orange: '#FF9F24', gray: '#94A3B8', bgLineBlue: 'rgba(74, 114, 255, 0.1)', bgLineRed: 'rgba(255, 74, 87, 0.1)' };
 const categoryLabels = { 'ingresos': 'Ingreso', 'ahorro': 'Ahorro', 'fijos': 'Fijos', 'compras': 'Compras', 'restaurantes': 'Restaurantes', 'extra': 'Extra', 'trabajo': 'Trabajo' };
 const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
+
 // --- INITIALIZATION ---
 function init() {
     loadData();
+    const d = new Date(); currentMonthId = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
     
-    // Default to current month
-    const d = new Date();
-    currentMonthId = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-    
-    // Listeners navigation
     monthSelector.addEventListener('change', (e) => { currentMonthId = e.target.value; updateDashboardUI(); });
     goToGastosBtn.addEventListener('click', () => toggleView(true));
     kpiCardGastos.addEventListener('click', () => toggleView(true));
     backToDashBtn.addEventListener('click', () => toggleView(false));
     
-    // Listeners Actions
     addTxnForm.addEventListener('submit', handleAddTxn);
-    
     configFixedBtn.addEventListener('click', openTemplates);
     loadFixedBtn.addEventListener('click', loadTemplatesToMonth);
-    document.getElementById('clearMonthBtn').addEventListener('click', handleClearMonth);
-    templateForm.addEventListener('submit', handleAddTemplate);
-    editTxnForm.addEventListener('submit', handleSaveEditTxn);
+    clearMonthBtn.addEventListener('click', handleClearMonth);
 
-    // Initial render
     renderMonthSelector();
     updateDashboardUI();
 }
 
-// Data loading / saving
 function loadData() {
     const savedTxns = localStorage.getItem(STORAGE_KEY);
     const savedTpls = localStorage.getItem(TEMPLATES_KEY);
-    
     if (savedTxns) transactions = JSON.parse(savedTxns);
     if (savedTpls) {
         fixedTemplates = JSON.parse(savedTpls);
     } else {
-        // Create some defaults
-        fixedTemplates = [
-            { id: 'tpl1', desc: 'Alquiler', amount: 800 },
-            { id: 'tpl2', desc: 'Internet', amount: 35 },
-            { id: 'tpl3', desc: 'Agua', amount: 40 }
-        ];
+        fixedTemplates = [ { id: 'tpl1', desc: 'Alquiler', amount: 800 }, { id: 'tpl2', desc: 'Internet', amount: 35 }, { id: 'tpl3', desc: 'Agua', amount: 40 } ];
         saveTemplates();
     }
 }
@@ -106,7 +83,6 @@ function loadData() {
 function saveTxns() { localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions)); }
 function saveTemplates() { localStorage.setItem(TEMPLATES_KEY, JSON.stringify(fixedTemplates)); }
 
-// Aggregation
 function getMonthsList() {
     const rawSet = new Set(transactions.map(t => t.monthId));
     rawSet.add(currentMonthId);
@@ -132,7 +108,73 @@ function formatMonth(id) { const [year, month] = id.split('-'); const m = monthN
 function calcTotalGastos(item) { return item.fijos + item.compras + item.restaurantes + item.extra + item.trabajo; }
 
 
-// --- NAVIGATION & VIEWS ---
+// --- GLOBAL MODAL SYSTEM ---
+window.closeGlobalModal = function() {
+    globalModal.classList.remove('active');
+};
+
+function showModal(config) {
+    globalModalTitle.textContent = config.title;
+    globalModalContent.style.maxWidth = config.maxWidth || '500px';
+    globalModalBody.innerHTML = config.body || '';
+    globalModalFooter.innerHTML = '';
+    
+    if (config.footerItems && config.footerItems.length > 0) {
+        globalModalFooter.style.display = 'flex';
+        globalModalFooter.className = 'form-actions space-between';
+        
+        config.footerItems.forEach(btn => {
+            const b = document.createElement('button');
+            b.className = `btn ${btn.class || 'btn-primary'}`;
+            // Adjust full width if needed
+            if (config.footerItems.length === 1 && btn.class !== 'btn-outline') {
+                b.style.width = '100%'; 
+                b.style.justifyContent = 'center';
+            }
+            b.textContent = btn.text;
+            b.onclick = async (e) => {
+                e.preventDefault();
+                if (btn.onClick) await btn.onClick();
+                if (btn.close !== false) closeGlobalModal();
+            };
+            globalModalFooter.appendChild(b);
+        });
+    } else {
+        globalModalFooter.style.display = 'none';
+    }
+
+    if(config.onRender) config.onRender();
+    
+    globalModal.classList.add('active');
+}
+
+function customAlert(message) {
+    return new Promise(resolve => {
+        showModal({
+            title: 'Aviso',
+            body: `<p style="color: var(--text-secondary); font-size: 0.95rem;">${message}</p>`,
+            maxWidth: '400px',
+            footerItems: [{ text: 'Aceptar', close: true, onClick: resolve }]
+        });
+    });
+}
+
+function customConfirm(message, confirmText = 'Confirmar', isDanger = false) {
+    return new Promise(resolve => {
+        showModal({
+            title: 'Confirmación',
+            body: `<p style="color: var(--text-secondary); font-size: 0.95rem;">${message}</p>`,
+            maxWidth: '430px',
+            footerItems: [
+                { text: 'Cancelar', class: 'btn-outline', close: true, onClick: () => resolve(false) },
+                { text: confirmText, class: isDanger ? 'btn-danger' : 'btn-primary', close: true, onClick: () => resolve(true) }
+            ]
+        });
+    });
+}
+
+
+// --- VIEWS LOGIC ---
 function toggleView(showGastos) {
     if (showGastos) {
         dashboardView.style.display = 'none';
@@ -146,20 +188,15 @@ function toggleView(showGastos) {
     }
 }
 
-
-// --- GASTOS VIEW LOGIC ---
 function updateGastosViewUI() {
     gastosViewTitle.textContent = `Movimientos: ${formatMonth(currentMonthId)}`;
-    
-    const [y, m] = currentMonthId.split('-');
-    txnDate.value = `${y}-${m}-01`;
+    const [y, m] = currentMonthId.split('-'); txnDate.value = `${y}-${m}-01`;
 
-    const monthTxns = transactions.filter(t => t.monthId === currentMonthId)
-                        .sort((a, b) => {
-                            const d1 = a.date ? new Date(a.date).getTime() : 0;
-                            const d2 = b.date ? new Date(b.date).getTime() : 0;
-                            return d2 - d1;
-                        });
+    const monthTxns = transactions.filter(t => t.monthId === currentMonthId).sort((a,b) => {
+        const d1 = a.date ? new Date(a.date).getTime() : 0;
+        const d2 = b.date ? new Date(b.date).getTime() : 0;
+        return d2 - d1;
+    });
 
     txnTableBody.innerHTML = '';
     if (monthTxns.length === 0) {
@@ -170,13 +207,11 @@ function updateGastosViewUI() {
     monthTxns.forEach(t => {
         const isIngreso = t.category === 'ingresos';
         const isAhorro = t.category === 'ahorro';
-        
         let iconHtml = '<span class="dot dot-red"></span>';
         if (isIngreso || t.category === 'compras') iconHtml = '<span class="dot dot-blue"></span>';
         if (isAhorro || t.category === 'fijos') iconHtml = '<span class="dot dot-purple"></span>';
         if (t.category === 'restaurantes') iconHtml = '<span class="dot dot-green"></span>';
         if (t.category === 'extra') iconHtml = '<span class="dot dot-orange"></span>';
-        
         const sign = isIngreso ? '+' : (isAhorro ? '' : '-');
         const dStr = t.date ? t.date.split('-').reverse().slice(0,2).join('/') : '-';
 
@@ -187,12 +222,8 @@ function updateGastosViewUI() {
             <td><span class="cat-pill">${iconHtml} ${categoryLabels[t.category]}</span></td>
             <td style="text-align: right;" class="${isIngreso?'':'col-roja-val'}">${sign}${formatCurrency(t.amount)}</td>
             <td style="text-align: right; display: flex; justify-content: flex-end; gap: 8px;">
-                <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.8rem;" onclick="openEditTxn('${t.id}')">
-                    <i class="fa-solid fa-pen"></i>
-                </button>
-                <button class="btn btn-danger-outline" onclick="deleteTxn('${t.id}')">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
+                <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.8rem;" onclick="openEditTxn('${t.id}')"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-danger-outline" onclick="deleteTxn('${t.id}')"><i class="fa-solid fa-trash"></i></button>
             </td>
         `;
         txnTableBody.appendChild(tr);
@@ -203,173 +234,173 @@ function handleAddTxn(e) {
     e.preventDefault();
     const dStr = txnDate.value; 
     const mId = dStr ? dStr.substring(0, 7) : currentMonthId; 
-    
-    const t = {
-        id: crypto.randomUUID(),
-        monthId: mId,
-        date: dStr || '',
-        desc: txnDesc.value,
-        category: txnCat.value,
-        amount: parseFloat(txnAmount.value)
-    };
-    transactions.push(t);
+    transactions.push({ id: crypto.randomUUID(), monthId: mId, date: dStr || '', desc: txnDesc.value, category: txnCat.value, amount: parseFloat(txnAmount.value) });
     saveTxns();
-    
     currentMonthId = mId; 
-    addTxnForm.reset();
-    txnDate.value = dStr; 
+    addTxnForm.reset(); txnDate.value = dStr; 
     updateGastosViewUI();
 }
 
-window.deleteTxn = function(id) {
-    if(confirm("¿Eliminar movimiento?")) { transactions = transactions.filter(t => t.id !== id); saveTxns(); updateGastosViewUI(); }
+// Transaction Actions using Modals
+window.deleteTxn = async function(id) {
+    const isYes = await customConfirm("¿Eliminar este movimiento de forma permanente?", "Eliminar", true);
+    if(isYes) { transactions = transactions.filter(t => t.id !== id); saveTxns(); updateGastosViewUI(); }
 };
 
-function handleClearMonth() {
-    const monthTxns = transactions.filter(t => t.monthId === currentMonthId);
-    if(monthTxns.length === 0) {
-        alert("No hay movimientos en este mes para eliminar.");
+async function handleClearMonth() {
+    const mt = transactions.filter(t => t.monthId === currentMonthId);
+    if(mt.length === 0) {
+        await customAlert("No hay movimientos en este mes para vaciar.");
         return;
     }
-    if(confirm(`¿Estás SEGURO de que deseas eliminar TODOS los movimientos (${monthTxns.length}) de ${formatMonth(currentMonthId)}? Esta acción no se puede deshacer.`)) {
+    const isYes = await customConfirm(`¿Estás SEGURO de que deseas eliminar TODOS los movimientos (${mt.length}) de ${formatMonth(currentMonthId)}? Esta acción no se puede deshacer.`, "Vaciar Mes", true);
+    if(isYes) {
         transactions = transactions.filter(t => t.monthId !== currentMonthId);
-        saveTxns();
-        updateGastosViewUI();
+        saveTxns(); updateGastosViewUI();
     }
 }
 
 window.openEditTxn = function(id) {
     const t = transactions.find(x => x.id === id);
     if(!t) return;
-    editTxnId.value = t.id;
-    editTxnDesc.value = t.desc;
-    editTxnAmount.value = t.amount;
     
-    // Auto format color depending on type
-    editTxnAmount.style.color = (t.category === 'ingresos') ? 'var(--text-primary)' : 'var(--brand-red)';
-    editTxnModal.classList.add('active');
+    showModal({
+        title: 'Ajustar Gasto del Mes',
+        maxWidth: '430px',
+        body: `
+            <form id="editTxnFormObj">
+                <div style="margin-bottom: 16px;">
+                    <label style="display:block; font-size: 0.8rem; margin-bottom: 4px; font-weight: 600; color:var(--text-secondary);">Concepto</label>
+                    <input type="text" id="editTxnDesc" required value="${t.desc}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: Inter;">
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <label style="display:block; font-size: 0.8rem; margin-bottom: 4px; font-weight: 600; color:var(--text-secondary);">Importe Exacto en este mes (€)</label>
+                    <input type="number" id="editTxnAmount" step="0.01" min="0" required value="${t.amount}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 1.1rem; font-weight: 700; color: ${t.category === 'ingresos' ? 'var(--text-primary)' : 'var(--brand-red)'}; font-family: Inter;">
+                </div>
+            </form>
+        `,
+        footerItems: [
+            { text: 'Cancelar', class: 'btn-outline', close: true },
+            { 
+                text: 'Guardar Cambios', 
+                class: 'btn-primary', 
+                close: false, 
+                onClick: () => {
+                    const form = document.getElementById('editTxnFormObj');
+                    if(!form.checkValidity()) { form.reportValidity(); return; }
+                    
+                    t.desc = document.getElementById('editTxnDesc').value;
+                    t.amount = parseFloat(document.getElementById('editTxnAmount').value);
+                    saveTxns();
+                    updateGastosViewUI();
+                    closeGlobalModal();
+                } 
+            }
+        ]
+    });
 };
 
-function handleSaveEditTxn(e) {
-    e.preventDefault();
-    const t = transactions.find(x => x.id === editTxnId.value);
-    if(t) {
-        t.desc = editTxnDesc.value;
-        t.amount = parseFloat(editTxnAmount.value);
-        saveTxns();
-        updateGastosViewUI();
-        editTxnModal.classList.remove('active');
-    }
-}
 
-
-// --- FIXED TEMPLATES LOGIC ---
+// Templates Actions using Modals
 function openTemplates() {
-    renderTemplates();
-    fixedExpensesModal.classList.add('active');
-}
-
-function renderTemplates() {
-    templateListBody.innerHTML = '';
-    if (fixedTemplates.length === 0) {
-        templateListBody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px;">No hay plantillas de fijos.</td></tr>`;
-        return;
-    }
-    
-    fixedTemplates.forEach(tpl => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td style="font-weight: 600;">${tpl.desc}</td>
-            <td style="text-align: right; color: var(--text-secondary); width: 100px;">${formatCurrency(tpl.amount)}</td>
-            <td style="text-align: right; width: 60px;">
-                <button class="icon-btn" style="color:var(--brand-red);" onclick="deleteTemplate('${tpl.id}')"><i class="fa-solid fa-trash"></i></button>
-            </td>
-        `;
-        templateListBody.appendChild(tr);
+    showModal({
+        title: 'Plantilla de Gastos Fijos',
+        maxWidth: '550px',
+        body: `
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">
+                Define aquí los gastos que tienes casi todos los meses (Alquiler, Luz, Internet). Al usar el botón "Cargar", se volcarán al mes actual y <strong>podrás editar el importe exacto para ese mes</strong>.
+            </p>
+            <form id="tplForm" style="display: flex; gap: 8px; margin-bottom: 24px;">
+                <input type="text" id="addTplDesc" placeholder="Concepto (ej. Agua)" required style="flex:2; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: Inter;">
+                <input type="number" id="addTplAmt" placeholder="Coste base (€)" step="0.01" min="0" required style="flex:1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: Inter;">
+                <button type="submit" class="btn btn-primary" style="padding: 10px 16px;"><i class="fa-solid fa-plus"></i></button>
+            </form>
+            <div class="table-wrapper"><table style="margin-top:0;"><tbody id="tplBody"></tbody></table></div>
+        `,
+        footerItems: [{ text: 'Cerrar Plantillas', class: 'btn-outline', close: true }],
+        onRender: () => {
+            const f = document.getElementById('tplForm');
+            f.onsubmit = (e) => {
+                e.preventDefault();
+                const d = document.getElementById('addTplDesc').value;
+                const a = parseFloat(document.getElementById('addTplAmt').value);
+                fixedTemplates.push({ id: crypto.randomUUID(), desc: d, amount: a });
+                saveTemplates(); f.reset(); renderTemplatesList();
+            };
+            renderTemplatesList();
+        }
     });
 }
 
-function handleAddTemplate(e) {
-    e.preventDefault();
-    const desc = document.getElementById('tplDesc').value;
-    const amount = parseFloat(document.getElementById('tplAmount').value);
-    fixedTemplates.push({ id: crypto.randomUUID(), desc, amount });
-    saveTemplates();
-    templateForm.reset();
-    renderTemplates();
+function renderTemplatesList() {
+    const list = document.getElementById('tplBody');
+    if(!list) return;
+    list.innerHTML = '';
+    if(fixedTemplates.length === 0) { list.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px;">No tienes plantillas configuradas.</td></tr>`; return; }
+    fixedTemplates.forEach(tpl => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td style="font-weight: 600;">${tpl.desc}</td><td style="text-align: right; color: var(--text-secondary); width: 100px;">${formatCurrency(tpl.amount)}</td><td style="text-align: right; width: 60px;"><button class="icon-btn" style="color:var(--brand-red);" onclick="deleteTemplate('${tpl.id}')"><i class="fa-solid fa-trash"></i></button></td>`;
+        list.appendChild(tr);
+    });
 }
 
-window.deleteTemplate = function(id) {
-    if(confirm("¿Eliminar plantilla?")) { fixedTemplates = fixedTemplates.filter(t => t.id !== id); saveTemplates(); renderTemplates(); }
+window.deleteTemplate = async function(id) {
+    // Quick confirm without nested modal to avoid breaking z-indexes or stack
+    if(confirm("¿Eliminar plantilla base?")) { 
+        fixedTemplates = fixedTemplates.filter(t => t.id !== id); 
+        saveTemplates(); 
+        renderTemplatesList(); 
+    }
 };
 
-function loadTemplatesToMonth() {
-    if(fixedTemplates.length === 0) { alert("Primero debes Configurar los Fijos (no tienes plantillas)."); return; }
+async function loadTemplatesToMonth() {
+    if(fixedTemplates.length === 0) { 
+        await customAlert("Primero debes **Configurar Plantilla Fijos**. Actualmente no tienes ninguna guardada."); 
+        return; 
+    }
     
     let added = 0;
     fixedTemplates.forEach(tpl => {
         const exists = transactions.some(t => t.monthId === currentMonthId && t.desc === tpl.desc);
         if(!exists) {
-            transactions.push({
-                id: crypto.randomUUID(),
-                monthId: currentMonthId,
-                date: `${currentMonthId}-01`, // Default generic date for auto loaded
-                desc: tpl.desc,
-                category: 'fijos',
-                amount: tpl.amount
-            });
+            transactions.push({ id: crypto.randomUUID(), monthId: currentMonthId, date: `${currentMonthId}-01`, desc: tpl.desc, category: 'fijos', amount: tpl.amount });
             added++;
         }
     });
 
     if(added > 0) {
-        saveTxns();
-        updateGastosViewUI();
-        alert(`Se han añadido ${added} gastos fijos al mes de ${formatMonth(currentMonthId)}.`);
+        saveTxns(); updateGastosViewUI();
+        await customAlert(`Se han añadido ${added} gastos fijos al mes de ${formatMonth(currentMonthId)}.`);
     } else {
-        alert("Todos estos gastos fijos ya estaban cargados en este mes.");
+        await customAlert("Todos estos gastos fijos ya estaban cargados en este mes.");
     }
 }
 
 
-// --- DASHBOARD UI AGGREGATION ---
+// --- DASHBOARD UI CHARTS ---
 function renderMonthSelector() {
-    monthSelector.innerHTML = '';
-    const months = getMonthsList();
-    months.forEach(mId => {
-        const opt = document.createElement('option'); opt.value = mId; opt.textContent = formatMonth(mId);
-        if(mId === currentMonthId) opt.selected = true;
-        monthSelector.appendChild(opt);
-    });
+    monthSelector.innerHTML = ''; const months = getMonthsList();
+    months.forEach(mId => { const opt = document.createElement('option'); opt.value = mId; opt.textContent = formatMonth(mId); if(mId === currentMonthId) opt.selected = true; monthSelector.appendChild(opt); });
 }
 
 function updateDashboardUI() {
     const aggData = getMonthlyAggregates();
     if(aggData.length === 0) return;
-    
     let currentData = aggData.find(m => m.id === currentMonthId) || { id: currentMonthId, ingresos: 0, ahorro: 0, fijos: 0, compras: 0, restaurantes: 0, extra: 0, trabajo: 0 };
 
-    const totalGastos = calcTotalGastos(currentData);
-    const beneficio = currentData.ingresos - totalGastos;
-    
-    kpiIngresos.textContent = formatCurrency(currentData.ingresos); kpiGastos.textContent = formatCurrency(totalGastos);
-    kpiBeneficio.textContent = formatCurrency(beneficio); kpiAhorro.textContent = formatCurrency(currentData.ahorro);
+    const totalGastos = calcTotalGastos(currentData); const beneficio = currentData.ingresos - totalGastos;
+    kpiIngresos.textContent = formatCurrency(currentData.ingresos); kpiGastos.textContent = formatCurrency(totalGastos); kpiBeneficio.textContent = formatCurrency(beneficio); kpiAhorro.textContent = formatCurrency(currentData.ahorro);
     desgloseTitle.textContent = `Desglose ${formatMonth(currentMonthId)}`;
 
-    updateDonutChart(currentData, totalGastos);
-    updateHistoricalCharts(aggData);
-    updateTable(aggData);
+    updateDonutChart(currentData, totalGastos); updateHistoricalCharts(aggData); updateTable(aggData);
 }
 
 function updateDonutChart(data, total) {
     const config = { labels: ['Compras', 'Restaurantes', 'Extra', 'Trabajo', 'Fijos'], values: [data.compras, data.restaurantes, data.extra, data.trabajo, data.fijos], colors: [colors.blue, colors.green, colors.orange, colors.red, colors.purple] };
     donutLegend.innerHTML = '';
     config.labels.forEach((label, i) => {
-        const val = config.values[i]; const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
-        const dotColor = ['dot-blue', 'dot-green', 'dot-orange', 'dot-red', 'dot-purple'][i];
-        const row = document.createElement('div'); row.className = 'd-legend-row';
-        row.innerHTML = `<span class="dot ${dotColor}"></span><span class="d-legend-label">${label}</span><span class="d-legend-amount">${formatCurrency(val)}</span><span class="d-legend-pct">(${pct}%)</span>`;
-        donutLegend.appendChild(row);
+        const val = config.values[i]; const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0; const dotColor = ['dot-blue', 'dot-green', 'dot-orange', 'dot-red', 'dot-purple'][i];
+        const row = document.createElement('div'); row.className = 'd-legend-row'; row.innerHTML = `<span class="dot ${dotColor}"></span><span class="d-legend-label">${label}</span><span class="d-legend-amount">${formatCurrency(val)}</span><span class="d-legend-pct">(${pct}%)</span>`; donutLegend.appendChild(row);
     });
 
     if(donutChartInst) donutChartInst.destroy();

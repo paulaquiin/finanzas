@@ -42,9 +42,7 @@
         <!-- KPI CARDS -->
         <div class="kpi-grid">
             <div class="kpi-card" id="kpiCardIngresos">
-                <div class="kpi-icon blue-icon">
-                    <i class="fa-solid fa-wallet"></i>
-                </div>
+                <div class="kpi-icon blue-icon"><i class="fa-solid fa-wallet"></i></div>
                 <div class="kpi-info">
                     <p class="kpi-label">Ingresos (Cobro)</p>
                     <h2 class="kpi-value" id="kpiIngresos">€0,00</h2>
@@ -52,9 +50,7 @@
             </div>
 
             <div class="kpi-card clickable-card" id="kpiCardGastos" title="Ver y editar gastos">
-                <div class="kpi-icon red-icon">
-                    <i class="fa-regular fa-credit-card"></i>
-                </div>
+                <div class="kpi-icon red-icon"><i class="fa-regular fa-credit-card"></i></div>
                 <div class="kpi-info">
                     <p class="kpi-label">Gastos Totales <i class="fa-solid fa-arrow-right kpi-arrow"></i></p>
                     <h2 class="kpi-value" id="kpiGastos">€0,00</h2>
@@ -62,9 +58,7 @@
             </div>
 
             <div class="kpi-card" id="kpiCardBeneficio">
-                <div class="kpi-icon green-icon">
-                    <i class="fa-solid fa-arrow-trend-up"></i>
-                </div>
+                <div class="kpi-icon green-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
                 <div class="kpi-info">
                     <p class="kpi-label">Beneficio</p>
                     <h2 class="kpi-value" id="kpiBeneficio">€0,00</h2>
@@ -72,9 +66,7 @@
             </div>
 
             <div class="kpi-card" id="kpiCardAhorro">
-                <div class="kpi-icon purple-icon">
-                    <i class="fa-solid fa-piggy-bank"></i>
-                </div>
+                <div class="kpi-icon purple-icon"><i class="fa-solid fa-piggy-bank"></i></div>
                 <div class="kpi-info">
                     <p class="kpi-label">Ahorro del Mes</p>
                     <h2 class="kpi-value" id="kpiAhorro">€0,00</h2>
@@ -169,7 +161,7 @@
             
             <div class="gastos-header-actions" style="display:flex; justify-content: space-between; align-items:flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
                 <h3>Registrar nuevo movimiento</h3>
-                <div style="display: flex; gap: 12px;">
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                     <button id="configFixedBtn" class="btn btn-outline" style="font-size: 0.85rem;">
                         <i class="fa-solid fa-gear"></i> Configurar Plantilla Fijos
                     </button>
@@ -229,55 +221,22 @@
         </div>
     </div>
 
-    <!-- MODAL FOR FIXED EXPENSES TEMPLATES -->
-    <div id="fixedExpensesModal" class="modal">
-        <div class="modal-content">
+    <!-- ==============================================
+         GLOBAL DYNAMIC MODAL (For EVERYTHING)
+    =============================================== -->
+    <div id="globalModal" class="modal">
+        <div class="modal-content" id="globalModalContent" style="max-width: 500px;">
             <div class="modal-header">
-                <h2>Plantilla de Gastos Fijos</h2>
-                <button class="icon-btn close-btn" onclick="document.getElementById('fixedExpensesModal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+                <h2 id="globalModalTitle">Mensaje</h2>
+                <button class="icon-btn close-btn" onclick="closeGlobalModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 0.85rem;">
-                Define aquí los gastos que tienes casi todos los meses (Alquiler, Luz, Internet). 
-                Al usar el botón "Cargar", se volcarán al mes actual y <strong>podrás editar el importe exacto para ese mes</strong>.
-            </p>
-            
-            <form id="templateForm" style="display: flex; gap: 8px; margin-bottom: 24px;">
-                <input type="text" id="tplDesc" placeholder="Concepto (ej. Agua)" required style="flex:2; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <input type="number" id="tplAmount" placeholder="Coste base (€)" step="0.01" min="0" required style="flex:1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <button type="submit" class="btn btn-primary" style="padding: 10px 16px;"><i class="fa-solid fa-plus"></i></button>
-            </form>
-
-            <div class="table-wrapper">
-                <table style="margin-top:0;">
-                    <tbody id="templateListBody">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
+            <div id="globalModalBody"></div>
+            <div id="globalModalFooter" class="form-actions space-between" style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 24px;">
+                <!-- Filled via JS -->
             </div>
         </div>
     </div>
 
-    <!-- MODAL FOR EDITING A SINGLE TRANSACTION -->
-    <div id="editTxnModal" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
-            <div class="modal-header">
-                <h2>Ajustar Gasto del Mes</h2>
-                <button class="icon-btn close-btn" onclick="document.getElementById('editTxnModal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form id="editTxnForm">
-                <input type="hidden" id="editTxnId">
-                <div style="margin-bottom: 16px;">
-                    <label style="display:block; font-size: 0.8rem; margin-bottom: 4px; font-weight: 600; color:var(--text-secondary);">Concepto</label>
-                    <input type="text" id="editTxnDesc" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
-                </div>
-                <div style="margin-bottom: 24px;">
-                    <label style="display:block; font-size: 0.8rem; margin-bottom: 4px; font-weight: 600; color:var(--text-secondary);">Importe Exacto en este mes (€)</label>
-                    <input type="number" id="editTxnAmount" step="0.01" min="0" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 1.1rem; font-weight: 700; color: var(--brand-red);">
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Guardar Cambios</button>
-            </form>
-        </div>
-    </div>
 
     <script src="app.js"></script>
 </body>
