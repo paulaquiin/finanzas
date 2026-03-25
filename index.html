@@ -51,7 +51,6 @@
                 </div>
             </div>
 
-            <!-- This KPI is clickable -->
             <div class="kpi-card clickable-card" id="kpiCardGastos" title="Ver y editar gastos">
                 <div class="kpi-icon red-icon">
                     <i class="fa-regular fa-credit-card"></i>
@@ -161,18 +160,26 @@
                 <button id="backToDashBtn" class="btn btn-outline" style="margin-bottom: 12px; font-size: 0.8rem; padding: 6px 12px;">
                     <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
                 </button>
-                <h1 id="gastosViewTitle">Movimientos: Mar 26</h1>
+                <h1 id="gastosViewTitle">Movimientos: -</h1>
                 <p>Añade y categoriza fácilmente tus gastos o ingresos para este mes.</p>
             </div>
         </header>
 
         <div class="chart-card">
             
-            <div class="gastos-header-actions" style="display:flex; justify-content: space-between; align-items:flex-end; margin-bottom: 24px;">
+            <div class="gastos-header-actions" style="display:flex; justify-content: space-between; align-items:flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
                 <h3>Registrar nuevo movimiento</h3>
-                <button id="copyFixedBtn" class="btn btn-outline" style="color: var(--brand-purple); border-color: rgba(154, 85, 255, 0.3);">
-                    <i class="fa-solid fa-clone"></i> Copiar Gastos Fijos del mes anterior
-                </button>
+                <div style="display: flex; gap: 12px;">
+                    <button id="configFixedBtn" class="btn btn-outline" style="font-size: 0.85rem;">
+                        <i class="fa-solid fa-gear"></i> Configurar Plantilla Fijos
+                    </button>
+                    <button id="loadFixedBtn" class="btn btn-outline" style="color: var(--brand-purple); border-color: rgba(154, 85, 255, 0.3); font-size: 0.85rem;">
+                        <i class="fa-solid fa-bolt"></i> Cargar Fijos al Mes
+                    </button>
+                    <button id="clearMonthBtn" class="btn btn-danger-outline" style="font-size: 0.85rem; padding: 10px 18px; border-radius: 8px;">
+                        <i class="fa-solid fa-trash-can"></i> Vaciar Mes
+                    </button>
+                </div>
             </div>
 
             <!-- Quick Add Form -->
@@ -219,6 +226,56 @@
                 </table>
             </div>
             
+        </div>
+    </div>
+
+    <!-- MODAL FOR FIXED EXPENSES TEMPLATES -->
+    <div id="fixedExpensesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Plantilla de Gastos Fijos</h2>
+                <button class="icon-btn close-btn" onclick="document.getElementById('fixedExpensesModal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 0.85rem;">
+                Define aquí los gastos que tienes casi todos los meses (Alquiler, Luz, Internet). 
+                Al usar el botón "Cargar", se volcarán al mes actual y <strong>podrás editar el importe exacto para ese mes</strong>.
+            </p>
+            
+            <form id="templateForm" style="display: flex; gap: 8px; margin-bottom: 24px;">
+                <input type="text" id="tplDesc" placeholder="Concepto (ej. Agua)" required style="flex:2; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <input type="number" id="tplAmount" placeholder="Coste base (€)" step="0.01" min="0" required style="flex:1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <button type="submit" class="btn btn-primary" style="padding: 10px 16px;"><i class="fa-solid fa-plus"></i></button>
+            </form>
+
+            <div class="table-wrapper">
+                <table style="margin-top:0;">
+                    <tbody id="templateListBody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FOR EDITING A SINGLE TRANSACTION -->
+    <div id="editTxnModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Ajustar Gasto del Mes</h2>
+                <button class="icon-btn close-btn" onclick="document.getElementById('editTxnModal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="editTxnForm">
+                <input type="hidden" id="editTxnId">
+                <div style="margin-bottom: 16px;">
+                    <label style="display:block; font-size: 0.8rem; margin-bottom: 4px; font-weight: 600; color:var(--text-secondary);">Concepto</label>
+                    <input type="text" id="editTxnDesc" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+                </div>
+                <div style="margin-bottom: 24px;">
+                    <label style="display:block; font-size: 0.8rem; margin-bottom: 4px; font-weight: 600; color:var(--text-secondary);">Importe Exacto en este mes (€)</label>
+                    <input type="number" id="editTxnAmount" step="0.01" min="0" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 1.1rem; font-weight: 700; color: var(--brand-red);">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Guardar Cambios</button>
+            </form>
         </div>
     </div>
 
