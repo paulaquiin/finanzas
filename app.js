@@ -88,15 +88,61 @@ function loadData() {
     const savedTxns = localStorage.getItem(STORAGE_KEY);
     const savedTpls = localStorage.getItem(TEMPLATES_KEY);
     
-    if (savedTxns) transactions = JSON.parse(savedTxns);
-    else transactions = [];
+    if (savedTxns) {
+        transactions = JSON.parse(savedTxns);
+    } else {
+        transactions = seedDemoData();
+        saveTxns();
+    }
     
     if (savedTpls) {
         fixedTemplates = JSON.parse(savedTpls);
     } else {
-        fixedTemplates = [];
+        fixedTemplates = [
+            { id: 'tpl1', desc: 'Alquiler', amount: 800 },
+            { id: 'tpl2', desc: 'Suscripción Netflix', amount: 15.99 },
+            { id: 'tpl3', desc: 'Internet Fibra', amount: 35 }
+        ];
         saveTemplates();
     }
+}
+
+function seedDemoData() {
+    const data = [];
+    const year = new Date().getFullYear();
+    
+    // Enero
+    const m1 = `${year}-01`;
+    data.push({ id: crypto.randomUUID(), monthId: m1, date: `${m1}-01`, desc: 'Nómina Enero', category: 'ingresos', amount: 2150 });
+    data.push({ id: crypto.randomUUID(), monthId: m1, date: `${m1}-02`, desc: 'Alquiler', category: 'fijos', amount: 800 });
+    data.push({ id: crypto.randomUUID(), monthId: m1, date: `${m1}-05`, desc: 'Mercadona semanal', category: 'compras', amount: 65.40 });
+    data.push({ id: crypto.randomUUID(), monthId: m1, date: `${m1}-10`, desc: 'Cena Restaurante', category: 'restaurantes', amount: 42.50 });
+    data.push({ id: crypto.randomUUID(), monthId: m1, date: `${m1}-15`, desc: 'Amazon pedido', category: 'compras', amount: 32.99 });
+    data.push({ id: crypto.randomUUID(), monthId: m1, date: `${m1}-20`, desc: 'Netflix', category: 'fijos', amount: 15.99 });
+    data.push({ id: crypto.randomUUID(), monthId: m1, date: `${m1}-25`, desc: 'Gasolina', category: 'trabajo', amount: 55 });
+
+    // Febrero
+    const m2 = `${year}-02`;
+    data.push({ id: crypto.randomUUID(), monthId: m2, date: `${m2}-01`, desc: 'Nómina Febrero', category: 'ingresos', amount: 2150 });
+    data.push({ id: crypto.randomUUID(), monthId: m2, date: `${m2}-02`, desc: 'Alquiler', category: 'fijos', amount: 800 });
+    data.push({ id: crypto.randomUUID(), monthId: m2, date: `${m2}-06`, desc: 'Mercadona', category: 'compras', amount: 72.10 });
+    data.push({ id: crypto.randomUUID(), monthId: m2, date: `${m2}-12`, desc: 'Lidl compra rápida', category: 'compras', amount: 18.30 });
+    data.push({ id: crypto.randomUUID(), monthId: m2, date: `${m2}-14`, desc: 'Cena San Valentín', category: 'restaurantes', amount: 85 });
+    data.push({ id: crypto.randomUUID(), monthId: m2, date: `${m2}-15`, desc: 'Spotify', category: 'fijos', amount: 9.99 });
+    data.push({ id: crypto.randomUUID(), monthId: m2, date: `${m2}-19`, desc: 'Zara rebajas', category: 'compras', amount: 45.95 });
+    data.push({ id: crypto.randomUUID(), monthId: m2, date: `${m2}-20`, desc: 'Netflix', category: 'fijos', amount: 15.99 });
+
+    // Marzo (Mes actual)
+    const m3 = `${year}-03`;
+    data.push({ id: crypto.randomUUID(), monthId: m3, date: `${m3}-01`, desc: 'Nómina Marzo', category: 'ingresos', amount: 2150 });
+    data.push({ id: crypto.randomUUID(), monthId: m3, date: `${m3}-02`, desc: 'Alquiler', category: 'fijos', amount: 800 });
+    data.push({ id: crypto.randomUUID(), monthId: m3, date: `${m3}-04`, desc: 'Mercadona compra', category: 'compras', amount: 58.20 });
+    data.push({ id: crypto.randomUUID(), monthId: m3, date: `${m3}-10`, desc: 'Amazon Echo', category: 'compras', amount: 49.99 });
+    data.push({ id: crypto.randomUUID(), monthId: m3, date: `${m3}-12`, desc: 'Burger King', category: 'restaurantes', amount: 12.50 });
+    data.push({ id: crypto.randomUUID(), monthId: m3, date: `${m3}-18`, desc: 'Uber trayecto', category: 'trabajo', amount: 14.20 });
+    data.push({ id: crypto.randomUUID(), monthId: m3, date: `${m3}-20`, desc: 'Netflix', category: 'fijos', amount: 15.99 });
+    
+    return data;
 }
 
 function saveTxns() { localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions)); }
