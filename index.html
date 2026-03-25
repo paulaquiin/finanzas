@@ -3,155 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanzas Locales</title>
-    <!-- Modern Typography: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Finanzas Personales - Dashboard</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CSS -->
     <link rel="stylesheet" href="index.css">
-    <!-- FontAwesome for icons -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar / Navigation -->
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="logo">
+    <div class="dashboard-container">
+        
+        <!-- HEADER -->
+        <header class="dashboard-header">
+            <div class="header-titles">
+                <h1>Finanzas Personales</h1>
+                <p>Panel interactivo de control de gastos e ingresos</p>
+            </div>
+            <div class="header-actions">
+                <button id="editDataBtn" class="btn btn-outline">
+                    <i class="fa-solid fa-pen-to-square"></i> Editar Datos
+                </button>
+                <div class="date-selector">
+                    <i class="fa-regular fa-calendar"></i>
+                    <select id="monthSelector">
+                        <!-- Filled via JS -->
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- KPI CARDS -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon blue-icon">
                     <i class="fa-solid fa-wallet"></i>
                 </div>
-                <h2>Mis Finanzas</h2>
-            </div>
-            
-            <nav class="nav-menu">
-                <a href="#" class="nav-item active">
-                    <i class="fa-solid fa-chart-pie"></i>
-                    <span>Dashboard</span>
-                </a>
-            </nav>
-
-            <div class="sidebar-bottom">
-                <div class="user-info">
-                    <p>Almacenamiento Local</p>
-                    <small>Seguro y privado</small>
+                <div class="kpi-info">
+                    <p class="kpi-label">Ingresos (Cobro)</p>
+                    <h2 class="kpi-value" id="kpiIngresos">€0,00</h2>
                 </div>
             </div>
-        </aside>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <header class="top-header">
-                <div class="month-selector">
-                    <button id="prevMonthBtn" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
-                    <h1 id="currentMonthDisplay">Enero 2026</h1>
-                    <button id="nextMonthBtn" class="icon-btn"><i class="fa-solid fa-chevron-right"></i></button>
+            <div class="kpi-card">
+                <div class="kpi-icon red-icon">
+                    <i class="fa-regular fa-credit-card"></i>
                 </div>
-                <div class="header-actions">
-                    <button id="addTransactionBtn" class="btn primary-btn">
-                        <i class="fa-solid fa-plus"></i> Nueva Transacción
-                    </button>
+                <div class="kpi-info">
+                    <p class="kpi-label">Gastos Totales</p>
+                    <h2 class="kpi-value" id="kpiGastos">€0,00</h2>
                 </div>
-            </header>
+            </div>
 
-            <section class="dashboard-widgets">
-                <!-- Balance -->
-                <div class="widget balance-widget">
-                    <div class="widget-icon">
-                        <i class="fa-solid fa-scale-balanced"></i>
-                    </div>
-                    <div class="widget-details">
-                        <h3>Balance Total</h3>
-                        <p class="amount" id="balanceAmount">0,00 €</p>
-                    </div>
+            <div class="kpi-card">
+                <div class="kpi-icon green-icon">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
                 </div>
+                <div class="kpi-info">
+                    <p class="kpi-label">Beneficio</p>
+                    <h2 class="kpi-value" id="kpiBeneficio">€0,00</h2>
+                </div>
+            </div>
 
-                <!-- Income -->
-                <div class="widget income-widget">
-                    <div class="widget-icon">
-                        <i class="fa-solid fa-arrow-up"></i>
-                    </div>
-                    <div class="widget-details">
-                        <h3>Ingresos</h3>
-                        <p class="amount positive" id="incomeAmount">0,00 €</p>
-                    </div>
+            <div class="kpi-card">
+                <div class="kpi-icon purple-icon">
+                    <i class="fa-solid fa-piggy-bank"></i>
                 </div>
+                <div class="kpi-info">
+                    <p class="kpi-label">Ahorro del Mes</p>
+                    <h2 class="kpi-value" id="kpiAhorro">€0,00</h2>
+                </div>
+            </div>
+        </div>
 
-                <!-- Expenses -->
-                <div class="widget expense-widget">
-                    <div class="widget-icon">
-                        <i class="fa-solid fa-arrow-down"></i>
-                    </div>
-                    <div class="widget-details">
-                        <h3>Gastos</h3>
-                        <p class="amount negative" id="expenseAmount">0,00 €</p>
+        <!-- CHARTS MIDDLE ROW -->
+        <div class="charts-middle-grid">
+            <div class="chart-card chart-line-container">
+                <div class="chart-header">
+                    <h3>Evolución Histórica</h3>
+                    <div class="chart-legend-custom">
+                        <span class="legend-item"><span class="dot dot-blue"></span> Ingresos</span>
+                        <span class="legend-item"><span class="dot dot-red"></span> Gastos</span>
                     </div>
                 </div>
-            </section>
+                <div class="canvas-wrapper">
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </div>
 
-            <section class="transactions-section">
-                <div class="section-header">
-                    <h2>Transacciones del Mes</h2>
+            <div class="chart-card chart-donut-container">
+                <div class="chart-header">
+                    <h3 id="desgloseTitle">Desglose Mar 26</h3>
                 </div>
-                
-                <div class="transactions-list" id="transactionsList">
-                    <!-- Transactions will be rendered here dynamically -->
-                    <div class="empty-state">
-                        <i class="fa-regular fa-folder-open"></i>
-                        <p>No hay transacciones este mes.</p>
-                    </div>
+                <div class="canvas-wrapper donut-wrapper">
+                    <canvas id="donutChart"></canvas>
                 </div>
-            </section>
-        </main>
+                <!-- Custom Legend for Donut -->
+                <div id="donutLegend" class="donut-legend">
+                    <!-- Filled via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS BOTTOM ROW -->
+        <div class="chart-card chart-bar-container">
+            <div class="chart-header">
+                <h3>Comparativa de Gastos Variables</h3>
+            </div>
+            <div class="canvas-wrapper bar-wrapper">
+                <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-legend-custom center-legend">
+                <span class="legend-item"><span class="dot dot-blue"></span> Compras</span>
+                <span class="legend-item"><span class="dot dot-green"></span> Comida Fuera</span>
+                <span class="legend-item"><span class="dot dot-orange"></span> Extra</span>
+                <span class="legend-item"><span class="dot dot-red"></span> Trabajo</span>
+            </div>
+        </div>
+
+        <!-- DATA TABLE -->
+        <div class="chart-card table-container">
+            <div class="chart-header">
+                <h3>Histórico Detallado</h3>
+                <button class="text-btn">Exportar informe</button>
+            </div>
+            <div class="table-wrapper">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>MES</th>
+                            <th>INGRESOS</th>
+                            <th class="col-roja">GASTOS</th>
+                            <th>FIJOS</th>
+                            <th>EXTRA</th>
+                            <th>BENEFICIO</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Filled via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- Modal for adding transactions -->
-    <div id="transactionModal" class="modal">
+    <!-- MODAL FOR DYNAMIC EDITING -->
+    <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Cargar Transacción</h2>
+                <h2 id="modalTitle">Mes: Mar 26</h2>
                 <button id="closeModalBtn" class="icon-btn close-btn"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
-            <form id="transactionForm">
-                <div class="form-group type-selector">
-                    <label class="radio-label">
-                        <input type="radio" name="type" value="expense" checked>
-                        <span class="radio-custom expense"><i class="fa-solid fa-arrow-down"></i> Gasto</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="type" value="income">
-                        <span class="radio-custom income"><i class="fa-solid fa-arrow-up"></i> Ingreso</span>
-                    </label>
+            <form id="dataForm">
+                <!-- Data is input by month. We edit the CURRENTLY selected month -->
+                <div class="form-grid">
+                    <div class="form-group full-row">
+                        <label>Periodo (Mes y Año)</label>
+                        <input type="month" id="formMonthDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ingresos Totales (€)</label>
+                        <input type="number" id="formIngresos" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ahorro del Mes (€)</label>
+                        <input type="number" id="formAhorro" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-section-title">Detalle de Gastos</div>
+
+                    <div class="form-group">
+                        <label>Fijos (€)</label>
+                        <input type="number" id="formFijos" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Compras (€)</label>
+                        <input type="number" id="formCompras" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Restaurantes / Comida Fuera (€)</label>
+                        <input type="number" id="formRestaurantes" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Extra (€)</label>
+                        <input type="number" id="formExtra" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Trabajo (€)</label>
+                        <input type="number" id="formTrabajo" step="0.01" min="0" required>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="amount">Importe (€)</label>
-                    <input type="number" id="amount" step="0.01" min="0" required placeholder="0.00">
-                </div>
-
-                <div class="form-group">
-                    <label for="category">Categoría</label>
-                    <select id="category" required>
-                        <option value="" disabled selected>Selecciona una categoría...</option>
-                        <option value="housing">Vivienda</option>
-                        <option value="food">Alimentación</option>
-                        <option value="transport">Transporte</option>
-                        <option value="leisure">Ocio</option>
-                        <option value="salary">Sueldo / Nómina</option>
-                        <option value="others">Otros</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="date">Fecha</label>
-                    <input type="date" id="date" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="description">Descripción</label>
-                    <input type="text" id="description" required placeholder="Ej: Compra supermercado">
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn primary-btn full-width">Guardar Transacción</button>
+                <div class="form-actions space-between">
+                    <button type="button" id="deleteMonthBtn" class="btn btn-danger">Eliminar Mes</button>
+                    <button type="submit" class="btn btn-primary">Guardar Datos</button>
                 </div>
             </form>
         </div>
