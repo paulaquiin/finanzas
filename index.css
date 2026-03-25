@@ -282,6 +282,11 @@ body {
 .canvas-wrapper {
     position: relative;
     width: 100%;
+    height: 350px; /* Default height for most charts */
+}
+
+.chart-line-container .canvas-wrapper {
+    height: 450px; /* Taller line chart as requested */
 }
 
 .chart-donut-container {
@@ -294,7 +299,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 250px;
+    height: 300px; /* Adjusted donut area */
 }
 
 .donut-legend {

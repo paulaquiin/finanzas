@@ -520,27 +520,40 @@ function renderMonthSelector() {
 
 function updateDashboardUI() {
     const aggData = getMonthlyAggregates();
-    if(aggData.length === 0) return;
     let currentData = aggData.find(m => m.id === currentMonthId) || { id: currentMonthId, ingresos: 0, ahorro: 0, fijos: 0, compras: 0, restaurantes: 0, extra: 0, trabajo: 0 };
 
     const totalGastos = calcTotalGastos(currentData); const beneficio = currentData.ingresos - totalGastos;
     kpiIngresos.textContent = formatCurrency(currentData.ingresos); kpiGastos.textContent = formatCurrency(totalGastos); kpiBeneficio.textContent = formatCurrency(beneficio);
     desgloseTitle.textContent = `Desglose ${formatMonth(currentMonthId)}`;
 
-    updateDonutChart(currentData, totalGastos); updateHistoricalCharts(aggData); updateTable(aggData);
+    updateDonutChart(currentData, totalGastos); 
+    updateHistoricalCharts(aggData); 
+    updateTable(aggData);
 }
 
 function updateDonutChart(data, total) {
-    const config = { labels: ['Compras', 'Restaurantes', 'Extra', 'Trabajo', 'Fijos'], values: [data.compras, data.restaurantes, data.extra, data.trabajo, data.fijos], colors: [colors.blue, colors.green, colors.orange, colors.red, colors.purple] };
+    let finalLabels = ['Compras', 'Restaurantes', 'Extra', 'Trabajo', 'Fijos'];
+    let finalValues = [data.compras, data.restaurantes, data.extra, data.trabajo, data.fijos];
+    let finalColors = [colors.blue, colors.green, colors.orange, colors.red, colors.purple];
+    
+    // Default empty state if no expenses
+    if (total === 0) {
+        finalValues = [1];
+        finalColors = [colors.gray];
+        finalLabels = ['Sin gastos'];
+    }
+
     donutLegend.innerHTML = '';
-    config.labels.forEach((label, i) => {
-        const val = config.values[i]; const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0; const dotColor = ['dot-blue', 'dot-green', 'dot-orange', 'dot-red', 'dot-purple'][i];
+    const legendLabels = ['Compras', 'Restaurantes', 'Extra', 'Trabajo', 'Fijos'];
+    const legendValues = [data.compras, data.restaurantes, data.extra, data.trabajo, data.fijos];
+    legendLabels.forEach((label, i) => {
+        const val = legendValues[i]; const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0; const dotColor = ['dot-blue', 'dot-green', 'dot-orange', 'dot-red', 'dot-purple'][i];
         const row = document.createElement('div'); row.className = 'd-legend-row'; row.innerHTML = `<span class="dot ${dotColor}"></span><span class="d-legend-label">${label}</span><span class="d-legend-amount">${formatCurrency(val)}</span><span class="d-legend-pct">(${pct}%)</span>`; donutLegend.appendChild(row);
     });
 
     if(donutChartInst) donutChartInst.destroy();
     const ctx = document.getElementById('donutChart').getContext('2d');
-    donutChartInst = new Chart(ctx, { type: 'doughnut', data: { labels: config.labels, datasets: [{ data: config.values, backgroundColor: config.colors, borderWidth: 0, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.label}: €${c.raw.toFixed(2)}` } } } } });
+    donutChartInst = new Chart(ctx, { type: 'doughnut', data: { labels: finalLabels, datasets: [{ data: finalValues, backgroundColor: finalColors, borderWidth: 0, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { enabled: total > 0, callbacks: { label: c => ` ${c.label}: €${c.raw.toFixed(2)}` } } } } });
 }
 
 function updateHistoricalCharts(aggData) {
