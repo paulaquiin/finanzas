@@ -377,7 +377,11 @@ td.col-roja-val { color: var(--brand-red); }
     padding: 16px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
-    align-items: stretch;
+    align-items: flex-end; /* Align to the bottom of inputs if they differ slightly */
+}
+
+.quick-add-form .btn-primary {
+    height: 48px; /* Standardize height with inputs */
 }
 
 .txn-inputs {
