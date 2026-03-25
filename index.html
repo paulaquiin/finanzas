@@ -30,11 +30,15 @@
                 <button id="goToGastosBtn" class="btn btn-outline" title="Añadir gastos y categorizarlos">
                     <i class="fa-solid fa-list"></i> Añadir Movimientos
                 </button>
-                <div class="date-selector">
-                    <i class="fa-regular fa-calendar"></i>
-                    <select id="monthSelector">
+                <div class="custom-dropdown" id="monthDropdown">
+                    <button id="monthDropdownBtn" class="dropdown-trigger">
+                        <i class="fa-regular fa-calendar" style="margin-right: 8px; color: var(--brand-blue);"></i>
+                        <span id="selectedMonthText">Cargando...</span>
+                        <i class="fa-solid fa-chevron-down" style="margin-left: 10px; font-size: 0.7rem; color: var(--text-light);"></i>
+                    </button>
+                    <div id="monthDropdownMenu" class="dropdown-menu">
                         <!-- Filled via JS -->
-                    </select>
+                    </div>
                 </div>
             </div>
         </header>

@@ -77,28 +77,86 @@ body {
     gap: 16px;
 }
 
-.date-selector {
+/* CUSTOM PRETTIER DROPDOWN */
+.custom-dropdown {
+    position: relative;
+    user-select: none;
+}
+
+.dropdown-trigger {
     display: flex;
     align-items: center;
     background: var(--card-surface);
     border: 1px solid var(--border-color);
-    padding: 8px 16px;
+    padding: 0 16px;
+    height: 44px;
     border-radius: var(--radius-sm);
-    gap: 8px;
     color: var(--text-primary);
-    font-weight: 500;
+    font-weight: 700;
+    font-size: 0.95rem;
+    font-family: var(--font-body);
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    cursor: pointer;
 }
 
-.date-selector select {
-    border: none;
-    background: transparent;
-    font-weight: 600;
-    font-family: var(--font-body);
-    font-size: 0.95rem;
+.dropdown-trigger:hover {
+    border-color: var(--brand-blue);
+    box-shadow: 0 4px 12px rgba(74, 114, 255, 0.08);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 180px;
+    background: var(--card-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    padding: 8px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-menu.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
     cursor: pointer;
-    outline: none;
-    -webkit-appearance: none;
-    padding-right: 16px;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dropdown-item:hover {
+    background: #F8FAFC;
+    color: var(--brand-blue);
+}
+
+.dropdown-item.is-active {
+    background: rgba(74, 114, 255, 0.08);
+    color: var(--brand-blue);
+    font-weight: 700;
+}
+
+.dropdown-item.is-active::after {
+    content: "\f00c";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.7rem;
 }
 
 .btn {

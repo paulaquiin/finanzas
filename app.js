@@ -10,7 +10,9 @@ const dashboardView = document.getElementById('dashboardView');
 const gastosView = document.getElementById('gastosView');
 
 // DOM Elements: Dashboard
-const monthSelector = document.getElementById('monthSelector');
+const monthDropdownBtn = document.getElementById('monthDropdownBtn');
+const monthDropdownMenu = document.getElementById('monthDropdownMenu');
+const selectedMonthText = document.getElementById('selectedMonthText');
 const goToGastosBtn = document.getElementById('goToGastosBtn');
 const kpiCardGastos = document.getElementById('kpiCardGastos');
 const kpiIngresos = document.getElementById('kpiIngresos');
@@ -68,7 +70,15 @@ function init() {
     loadData();
     const d = new Date(); currentMonthId = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
     
-    monthSelector.addEventListener('change', (e) => { currentMonthId = e.target.value; updateDashboardUI(); });
+    monthDropdownBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        monthDropdownMenu.classList.toggle('active');
+    });
+    
+    document.addEventListener('click', () => {
+        monthDropdownMenu.classList.remove('active');
+    });
+
     goToGastosBtn.addEventListener('click', () => toggleView(true));
     kpiCardIngresos.addEventListener('click', () => toggleView(true));
     kpiCardGastos.addEventListener('click', () => toggleView(true));
@@ -149,13 +159,30 @@ function saveTxns() { localStorage.setItem(STORAGE_KEY, JSON.stringify(transacti
 function saveTemplates() { localStorage.setItem(TEMPLATES_KEY, JSON.stringify(fixedTemplates)); }
 
 function getMonthsList() {
-    const rawSet = new Set(transactions.map(t => t.monthId));
-    rawSet.add(currentMonthId);
+    const rawSet = new Set();
+    
+    // Always include all months of current year so far
+    const d = new Date();
+    const curYear = d.getFullYear();
+    const curMonth = d.getMonth() + 1;
+    for (let i = 1; i <= curMonth; i++) {
+        rawSet.add(`${curYear}-${i.toString().padStart(2, '0')}`);
+    }
+    
+    // Also include any months that have transactions (historic)
+    transactions.forEach(t => { if(t.monthId) rawSet.add(t.monthId); });
+    
+    // Always include the current month being viewed
+    if(currentMonthId) rawSet.add(currentMonthId);
+
+    // Return sorted descending (newest first)
     return Array.from(rawSet).sort((a,b) => b.localeCompare(a));
 }
 
 function getMonthlyAggregates() {
     const months = getMonthsList();
+    // For the historical chart, we might want chronological order, but for the selector we want newest first.
+    // Let's get the list for calculations:
     const agg = [];
     months.forEach(mId => {
         const txns = transactions.filter(t => t.monthId === mId);
@@ -163,6 +190,7 @@ function getMonthlyAggregates() {
         txns.forEach(t => { if (m[t.category] !== undefined) m[t.category] += parseFloat(t.amount); });
         agg.push(m);
     });
+    // Return sorted chronologically for charts
     return agg.sort((a,b) => a.id.localeCompare(b.id)); 
 }
 
@@ -593,8 +621,27 @@ function openBulkAdd() {
 
 // --- DASHBOARD UI CHARTS ---
 function renderMonthSelector() {
-    monthSelector.innerHTML = ''; const months = getMonthsList();
-    months.forEach(mId => { const opt = document.createElement('option'); opt.value = mId; opt.textContent = formatMonth(mId); if(mId === currentMonthId) opt.selected = true; monthSelector.appendChild(opt); });
+    if(!monthDropdownMenu) return;
+    monthDropdownMenu.innerHTML = ''; 
+    const months = getMonthsList();
+    
+    months.forEach(mId => { 
+        const item = document.createElement('div'); 
+        item.className = `dropdown-item ${mId === currentMonthId ? 'is-active' : ''}`;
+        item.textContent = formatMonth(mId);
+        
+        item.onclick = (e) => {
+            e.stopPropagation();
+            currentMonthId = mId;
+            monthDropdownMenu.classList.remove('active');
+            updateDashboardUI();
+            renderMonthSelector();
+        };
+        
+        monthDropdownMenu.appendChild(item);
+    });
+    
+    selectedMonthText.textContent = formatMonth(currentMonthId);
 }
 
 function updateDashboardUI() {
