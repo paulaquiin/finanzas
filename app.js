@@ -64,6 +64,7 @@ function init() {
     configFixedBtn.addEventListener('click', openTemplates);
     loadFixedBtn.addEventListener('click', loadTemplatesToMonth);
     clearMonthBtn.addEventListener('click', handleClearMonth);
+    document.getElementById('bulkAddBtn').addEventListener('click', openBulkAdd);
 
     renderMonthSelector();
     updateDashboardUI();
@@ -414,6 +415,101 @@ async function loadTemplatesToMonth() {
     } else {
         await customAlert("Todos estos gastos fijos ya estaban cargados en este mes.");
     }
+}
+
+
+// --- BULK ADD LOGIC ---
+function openBulkAdd() {
+    showModal({
+        title: 'Añadir en Bloque (Multi-Movimiento)',
+        maxWidth: '550px',
+        body: `
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">
+                Pega aquí tu lista de gastos (uno por línea). Puedes usar el formato <strong>"Súper: 25.50"</strong> o simplemente poner <strong>"25.50"</strong> (se usará el concepto por defecto).
+            </p>
+            <div style="margin-bottom: 16px;">
+                <label style="display:block; font-size: 0.8rem; margin-bottom: 6px; font-weight: 600; color:var(--text-secondary);">Destinar todo a la categoría:</label>
+                <select id="bulkCat" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: Inter;">
+                    <option value="compras" selected>Compras</option>
+                    <option value="restaurantes">Restaurantes / Comida</option>
+                    <option value="extra">Extra / Ocio</option>
+                    <option value="fijos">Fijos / Pagos Recurrentes</option>
+                    <option value="trabajo">Trabajo / Transporte</option>
+                    <option value="ingresos">Ingresos</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 8px;">
+                <label style="display:block; font-size: 0.8rem; margin-bottom: 6px; font-weight: 600; color:var(--text-secondary);">Lista de movimientos:</label>
+                <textarea id="bulkData" rows="8" placeholder="Mercadona: 45.20\nGasolinera: 60\n12.50\n..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); font-family: 'Courier New', monospace; font-size: 0.9rem; resize: vertical;"></textarea>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display:block; font-size: 0.8rem; margin-bottom: 6px; font-weight: 600; color:var(--text-secondary);">Nombre por defecto si no se indica:</label>
+                <input type="text" id="bulkDefaultDesc" value="Movimiento en bloque" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: Inter;">
+            </div>
+        `,
+        footerItems: [
+            { text: 'Cancelar', class: 'btn-outline', close: true },
+            { 
+                text: 'Importar Movimientos', 
+                class: 'btn-primary', 
+                close: false, 
+                onClick: async () => {
+                    const data = document.getElementById('bulkData').value.trim();
+                    const cat = document.getElementById('bulkCat').value;
+                    const defaultDesc = document.getElementById('bulkDefaultDesc').value || 'Movimiento en bloque';
+                    
+                    if(!data) { alert("Pega algunos datos primero."); return; }
+                    
+                    const lines = data.split('\n');
+                    let count = 0;
+                    
+                    lines.forEach(line => {
+                        const cleanLine = line.trim();
+                        if(!cleanLine) return;
+                        
+                        let desc = defaultDesc;
+                        let valStr = cleanLine;
+                        
+                        if (cleanLine.includes(':')) {
+                            const parts = cleanLine.split(':');
+                            desc = parts[0].trim();
+                            valStr = parts[parts.length - 1].trim();
+                        } else if (cleanLine.includes(' ')) {
+                            // Try to see if it's "Concepto 25.50"
+                            const parts = cleanLine.split(/\s+/);
+                            const lastPart = parts[parts.length - 1].replace(',', '.');
+                            if (!isNaN(parseFloat(lastPart))) {
+                                valStr = lastPart;
+                                desc = parts.slice(0, -1).join(' ').trim();
+                            }
+                        }
+                        
+                        const amount = parseFloat(valStr.replace(',', '.'));
+                        if (!isNaN(amount)) {
+                            transactions.push({
+                                id: crypto.randomUUID(),
+                                monthId: currentMonthId,
+                                date: `${currentMonthId}-01`,
+                                desc: desc,
+                                category: cat,
+                                amount: amount
+                            });
+                            count++;
+                        }
+                    });
+                    
+                    if (count > 0) {
+                        saveTxns();
+                        updateGastosViewUI();
+                        closeGlobalModal();
+                        await customAlert(`¡Éxito! Se han importado ${count} movimientos a la categoría "${categoryLabels[cat]}".`);
+                    } else {
+                        alert("No se ha podido parsear ningún importe válido. Revisa el formato.");
+                    }
+                } 
+            }
+        ]
+    });
 }
 
 
