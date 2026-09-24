@@ -27,6 +27,12 @@
                 <p>Panel interactivo de control de gastos e ingresos</p>
             </div>
             <div class="header-actions">
+                <button id="backupDataBtn" class="btn btn-outline" title="Descargar una copia de todos tus datos">
+                    <i class="fa-solid fa-download"></i> Copia
+                </button>
+                <button id="importCsvBtn" class="btn btn-primary" title="Importar movimientos desde un archivo CSV o Excel">
+                    <i class="fa-solid fa-file-import"></i> Importar archivo
+                </button>
                 <button id="goToGastosBtn" class="btn btn-outline" title="Añadir gastos y categorizarlos">
                     <i class="fa-solid fa-list"></i> Añadir Movimientos
                 </button>
@@ -249,6 +255,8 @@
     </div>
 
 
+    <script src="vendor/xlsx.full.min.js"></script>
+    <script src="csv-import.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

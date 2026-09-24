@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'finanzas_txns_v2';
 const TEMPLATES_KEY = 'finanzas_templates_v2';
+const CSV_BACKUP_KEY = 'finanzas_backup_before_csv_v1';
 
 let transactions = [];
 let fixedTemplates = [];
@@ -14,6 +15,8 @@ const monthDropdownBtn = document.getElementById('monthDropdownBtn');
 const monthDropdownMenu = document.getElementById('monthDropdownMenu');
 const selectedMonthText = document.getElementById('selectedMonthText');
 const goToGastosBtn = document.getElementById('goToGastosBtn');
+const importCsvBtn = document.getElementById('importCsvBtn');
+const backupDataBtn = document.getElementById('backupDataBtn');
 const kpiCardGastos = document.getElementById('kpiCardGastos');
 const kpiIngresos = document.getElementById('kpiIngresos');
 const kpiGastos = document.getElementById('kpiGastos');
@@ -80,6 +83,8 @@ function init() {
     });
 
     goToGastosBtn.addEventListener('click', () => toggleView(true));
+    importCsvBtn.addEventListener('click', openCsvImport);
+    backupDataBtn.addEventListener('click', downloadBackup);
     kpiCardIngresos.addEventListener('click', () => toggleView(true));
     kpiCardGastos.addEventListener('click', () => toggleView(true));
     backToDashBtn.addEventListener('click', () => toggleView(false));
@@ -193,6 +198,277 @@ function seedDemoData() {
 
 function saveTxns() { localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions)); }
 function saveTemplates() { localStorage.setItem(TEMPLATES_KEY, JSON.stringify(fixedTemplates)); }
+
+function downloadBackup() {
+    const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        transactions,
+        fixedTemplates
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `finanzas-copia-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+function decodeCsvFile(buffer) {
+    try {
+        return new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+    } catch (_) {
+        return new TextDecoder('windows-1252').decode(buffer);
+    }
+}
+
+function readXlsxStructures(buffer) {
+    if (typeof XLSX === 'undefined') throw new Error('No se ha podido cargar el lector de archivos Excel.');
+    const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+    const sheets = [];
+    workbook.SheetNames.forEach(name => {
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[name], {
+            header: 1,
+            raw: true,
+            defval: '',
+            blankrows: false
+        });
+        try {
+            const structure = BankCsv.detectRows(rows);
+            sheets.push({ name, structure, dataRows: Math.max(0, rows.length - structure.headerIndex - 1) });
+        } catch (_) {}
+    });
+    if (sheets.length === 0) throw new Error('Ninguna hoja contiene columnas reconocibles de fecha, concepto e importe.');
+    return sheets.sort((a, b) => b.structure.score - a.structure.score || b.dataRows - a.dataRows);
+}
+
+function escapeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function columnOptions(headers, selected, allowEmpty = false, emptyLabel = 'No usar') {
+    const empty = allowEmpty ? `<option value="">${emptyLabel}</option>` : '';
+    return empty + headers.map((header, index) => `<option value="${index}" ${selected != null && selected !== '' && Number(selected) === index ? 'selected' : ''}>${escapeHtml(header || `Columna ${index + 1}`)}</option>`).join('');
+}
+
+function getCsvMappingFromForm() {
+    return {
+        date: document.getElementById('csvDateCol').value,
+        description: document.getElementById('csvDescCol').value,
+        amount: document.getElementById('csvAmountCol').value,
+        debit: document.getElementById('csvDebitCol').value,
+        credit: document.getElementById('csvCreditCol').value
+    };
+}
+
+function removeExistingCsvDuplicates(records) {
+    const existing = new Map();
+    transactions.forEach(txn => {
+        const key = BankCsv.fingerprintTransaction(txn);
+        existing.set(key, (existing.get(key) || 0) + 1);
+    });
+    const unique = [];
+    const duplicates = [];
+    records.forEach(record => {
+        const remaining = existing.get(record.fingerprint) || 0;
+        if (remaining > 0) {
+            duplicates.push(record);
+            existing.set(record.fingerprint, remaining - 1);
+        } else {
+            unique.push(record);
+        }
+    });
+    return { unique, duplicates };
+}
+
+function renderCsvPreview(state) {
+    const mapping = getCsvMappingFromForm();
+    if (mapping.date === '' || mapping.description === '') {
+        document.getElementById('csvImportSummary').innerHTML = '<div class="import-warning">Selecciona las columnas de fecha y concepto.</div>';
+        document.getElementById('csvPreviewBody').innerHTML = '';
+        document.getElementById('confirmCsvImport').disabled = true;
+        return;
+    }
+    if (mapping.amount === '' && mapping.debit === '' && mapping.credit === '') {
+        document.getElementById('csvImportSummary').innerHTML = '<div class="import-warning">Selecciona una columna de importe o las columnas de cargo/abono.</div>';
+        document.getElementById('csvPreviewBody').innerHTML = '';
+        document.getElementById('confirmCsvImport').disabled = true;
+        return;
+    }
+
+    const parsed = BankCsv.buildRecords(state.structure, mapping);
+    const deduped = removeExistingCsvDuplicates(parsed.valid);
+    state.parsed = parsed;
+    state.toImport = deduped.unique;
+    state.duplicates = deduped.duplicates;
+
+    const incomes = state.toImport.filter(item => item.category === 'ingresos').length;
+    const expenses = state.toImport.length - incomes;
+    document.getElementById('csvImportSummary').innerHTML = `
+        <div class="import-stats">
+            <span><strong>${state.toImport.length}</strong> nuevos</span>
+            <span class="text-income"><strong>${incomes}</strong> ingresos</span>
+            <span class="text-expense"><strong>${expenses}</strong> gastos</span>
+            <span><strong>${state.duplicates.length}</strong> duplicados omitidos</span>
+            <span><strong>${parsed.invalid.length}</strong> filas no válidas</span>
+        </div>`;
+
+    document.getElementById('csvPreviewBody').innerHTML = state.toImport.slice(0, 8).map(item => `
+        <tr>
+            <td>${escapeHtml(item.date.split('-').reverse().join('/'))}</td>
+            <td>${escapeHtml(item.desc)}</td>
+            <td>${escapeHtml(categoryLabels[item.category])}</td>
+            <td class="${item.category === 'ingresos' ? 'text-income' : 'text-expense'}" style="text-align:right;">${item.category === 'ingresos' ? '+' : '-'}${escapeHtml(formatCurrency(item.amount))}</td>
+        </tr>`).join('') || '<tr><td colspan="4" class="import-empty">No hay movimientos nuevos para importar.</td></tr>';
+    document.getElementById('confirmCsvImport').disabled = state.toImport.length === 0;
+}
+
+function showCsvMapping(state) {
+    const { headers, mapping } = state.structure;
+    const sheetPicker = state.sheets.length > 1 ? `
+        <label class="import-sheet-picker">Hoja del libro
+            <select id="xlsxSheetSelect">${state.sheets.map(sheet => `<option value="${escapeHtml(sheet.name)}" ${sheet.name === state.sheetName ? 'selected' : ''}>${escapeHtml(sheet.name)} · ${sheet.dataRows} filas</option>`).join('')}</select>
+        </label>` : '';
+    document.getElementById('csvImportWorkspace').innerHTML = `
+        <div class="import-file-ok"><i class="fa-solid fa-circle-check"></i> ${escapeHtml(state.file.name)}${state.sheetName ? ` · ${escapeHtml(state.sheetName)}` : ''} · ${state.structure.rows.length - state.structure.headerIndex - 1} filas detectadas</div>
+        <p class="import-help">Comprueba las columnas detectadas. Los importes positivos se tratan como ingresos y los negativos como gastos.</p>
+        ${sheetPicker}
+        <div class="import-mapping-grid">
+            <label>Fecha<select id="csvDateCol">${columnOptions(headers, mapping.date, true, 'Seleccionar…')}</select></label>
+            <label>Concepto<select id="csvDescCol">${columnOptions(headers, mapping.description, true, 'Seleccionar…')}</select></label>
+            <label>Importe con signo<select id="csvAmountCol">${columnOptions(headers, mapping.amount, true)}</select></label>
+            <label>Cargo (alternativa)<select id="csvDebitCol">${columnOptions(headers, mapping.debit, true)}</select></label>
+            <label>Abono (alternativa)<select id="csvCreditCol">${columnOptions(headers, mapping.credit, true)}</select></label>
+        </div>
+        <div id="csvImportSummary"></div>
+        <div class="table-wrapper import-preview"><table><thead><tr><th>FECHA</th><th>CONCEPTO</th><th>CATEGORÍA</th><th style="text-align:right;">IMPORTE</th></tr></thead><tbody id="csvPreviewBody"></tbody></table></div>`;
+
+    ['csvDateCol', 'csvDescCol', 'csvAmountCol', 'csvDebitCol', 'csvCreditCol'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => renderCsvPreview(state));
+    });
+    const sheetSelect = document.getElementById('xlsxSheetSelect');
+    if (sheetSelect) {
+        sheetSelect.addEventListener('change', () => {
+            const selected = state.sheets.find(sheet => sheet.name === sheetSelect.value);
+            if (!selected) return;
+            state.sheetName = selected.name;
+            state.structure = selected.structure;
+            showCsvMapping(state);
+        });
+    }
+    renderCsvPreview(state);
+}
+
+function persistCsvImport(state) {
+    if (!state.toImport || state.toImport.length === 0) return false;
+    const batchId = crypto.randomUUID();
+    const importedAt = new Date().toISOString();
+    const additions = state.toImport.map(record => ({
+        id: crypto.randomUUID(),
+        monthId: record.monthId,
+        date: record.date,
+        desc: record.desc,
+        category: record.category,
+        amount: record.amount,
+        importBatchId: batchId,
+        importSource: state.file.name,
+        importedAt
+    }));
+    const nextTransactions = [...transactions, ...additions];
+    const backup = JSON.stringify({ createdAt: importedAt, transactions, fixedTemplates });
+    const nextSerialized = JSON.stringify(nextTransactions);
+
+    try {
+        localStorage.setItem(CSV_BACKUP_KEY, backup);
+        localStorage.setItem(STORAGE_KEY, nextSerialized);
+        transactions = nextTransactions;
+    } catch (error) {
+        customAlert('No hay espacio local suficiente para guardar una copia segura y la importación. No se ha modificado ningún movimiento. Descarga una copia JSON antes de continuar.');
+        return false;
+    }
+
+    currentMonthId = additions.map(item => item.monthId).sort().pop() || currentMonthId;
+    renderMonthSelector();
+    updateDashboardUI();
+    return additions.length;
+}
+
+function openCsvImport() {
+    const state = { file: null, structure: null, sheets: [], sheetName: '', parsed: null, toImport: [], duplicates: [] };
+    showModal({
+        title: 'Importar movimientos del banco',
+        maxWidth: '900px',
+        body: `
+            <div class="import-dropzone">
+                <i class="fa-solid fa-file-import"></i>
+                <label for="csvFileInput">Seleccionar archivo CSV o Excel</label>
+                <input id="csvFileInput" type="file" accept=".csv,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                <small>El archivo se procesa únicamente en este navegador y no se envía a ningún servidor.</small>
+            </div>
+            <div id="csvImportError" class="import-error" hidden></div>
+            <div id="csvImportWorkspace"></div>`,
+        footerItems: [
+            { text: 'Cancelar', class: 'btn-outline', close: true },
+            {
+                text: 'Importar movimientos',
+                class: 'btn-primary',
+                close: false,
+                onClick: async () => {
+                    const count = persistCsvImport(state);
+                    if (!count) return;
+                    closeGlobalModal();
+                    await customAlert(`Se han importado ${count} movimientos. Se omitieron ${state.duplicates.length} duplicados y se guardó una copia local previa.`);
+                }
+            }
+        ],
+        onRender: () => {
+            const confirmButton = Array.from(globalModalFooter.querySelectorAll('button')).find(button => button.textContent === 'Importar movimientos');
+            confirmButton.id = 'confirmCsvImport';
+            confirmButton.disabled = true;
+            document.getElementById('csvFileInput').addEventListener('change', async event => {
+                const file = event.target.files[0];
+                const errorBox = document.getElementById('csvImportError');
+                const workspace = document.getElementById('csvImportWorkspace');
+                errorBox.hidden = true;
+                workspace.innerHTML = '<p class="import-loading"><i class="fa-solid fa-spinner fa-spin"></i> Analizando archivo…</p>';
+                confirmButton.disabled = true;
+                if (!file) { workspace.innerHTML = ''; return; }
+                if (file.size > 20 * 1024 * 1024) {
+                    workspace.innerHTML = '';
+                    errorBox.textContent = 'El archivo supera el límite de 20 MB.';
+                    errorBox.hidden = false;
+                    return;
+                }
+                try {
+                    state.file = file;
+                    const buffer = await file.arrayBuffer();
+                    if (/\.xlsx$/i.test(file.name) || file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+                        state.sheets = readXlsxStructures(buffer);
+                        state.sheetName = state.sheets[0].name;
+                        state.structure = state.sheets[0].structure;
+                    } else {
+                        state.sheets = [];
+                        state.sheetName = '';
+                        state.structure = BankCsv.detectStructure(decodeCsvFile(buffer));
+                    }
+                    showCsvMapping(state);
+                } catch (error) {
+                    workspace.innerHTML = '';
+                    errorBox.textContent = error.message || 'No se ha podido leer el archivo CSV.';
+                    errorBox.hidden = false;
+                }
+            });
+        }
+    });
+}
 
 function getMonthsList() {
     const rawSet = new Set();
@@ -367,7 +643,7 @@ function updateGastosViewUI() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td style="color: var(--text-light); font-size: 0.85rem;">${dStr}</td>
-            <td style="font-weight: 600;">${brandTagHtml}${displayDesc}</td>
+            <td style="font-weight: 600;">${brandTagHtml}${escapeHtml(displayDesc)}</td>
             <td><span class="cat-pill">${iconHtml} ${categoryLabels[t.category]}</span></td>
             <td style="text-align: right;" class="${isIngreso?'':'col-roja-val'}">${sign}${formatCurrency(t.amount)}</td>
             <td style="text-align: right; display: flex; justify-content: flex-end; gap: 8px;">
@@ -420,7 +696,7 @@ window.openEditTxn = function(id) {
             <form id="editTxnFormObj">
                 <div style="margin-bottom: 16px;">
                     <label style="display:block; font-size: 0.8rem; margin-bottom: 4px; font-weight: 600; color:var(--text-secondary);">Concepto</label>
-                    <input type="text" id="editTxnDesc" required value="${t.desc}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: Inter;">
+                    <input type="text" id="editTxnDesc" required value="${escapeHtml(t.desc)}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: Inter;">
                 </div>
                 <div style="margin-bottom: 8px;">
                     <label style="display:block; font-size: 0.8rem; margin-bottom: 4px; font-weight: 600; color:var(--text-secondary);">Importe Exacto en este mes (€)</label>

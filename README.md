@@ -12,6 +12,8 @@ Una aplicación web premium, local-first y centrada en la privacidad para gestio
 - **Reconocimiento de Marcas**: Etiquetas automáticas con colores corporativos e iconos para marcas habituales (Mercadona, Amazon, Netflix, etc.).
 - **Privacidad Total**: Los datos nunca salen de tu dispositivo. Se guardan en el `localStorage` de tu navegador.
 - **Añadir en Bloque**: Herramienta de importación masiva para múltiples movimientos.
+- **Importación bancaria CSV y XLSX**: Detecta la hoja, fecha, concepto e importe (o cargo/abono), clasifica por fecha e ingreso/gasto, muestra una vista previa y evita duplicados.
+- **Copias de seguridad**: Descarga todos los movimientos y plantillas en JSON. Antes de confirmar una importación CSV también se conserva una instantánea local de los datos anteriores.
 
 ## 🚀 Instalación y Uso
 
@@ -32,6 +34,7 @@ Este es un proyecto estático. No necesitas instalar bases de datos complicadas.
 - **HTML5** & **CSS3** (Diseño Premium con Inter Font)
 - **Vanilla JavaScript** (ES6+)
 - **Chart.js** (Visualización de Datos)
+- **SheetJS CE** (Lectura local de archivos Excel `.xlsx`)
 - **FontAwesome** (Iconografía)
 
 ## 📋 Normativa y GitHub Pages
